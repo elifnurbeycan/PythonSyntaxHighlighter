@@ -1,45 +1,50 @@
 import re
 
 class Token:
-    def __init__(self, type, value, start_index, end_index):
+    def __init__(self, type, value, line, column):
         self.type = type
         self.value = value
-        self.start_index = start_index  # "line.column" formatında
-        self.end_index = end_index
+        self.line = line
+        self.column = column
 
     def __repr__(self):
-        return f"Token({self.type}, {self.value}, {self.start_index} -> {self.end_index})"
+        return f"Token(type='{self.type}', value='{self.value}', line={self.line}, col={self.column})"
 
 class Lexer:
     def __init__(self):
         self.token_specs = [
-            ('KEYWORD',    r'\b(if|else|while|for|def|return|True|False|None|continue|break|print|in|range)\b'),
-            ('OPERATOR',   r'==|!=|<=|>=|<|>|=|\+|-|\*|/|%|\(|\)|\[|\]|\{|\}|:|,|\.'),
-            ('STRING',     r'"[^"\n]*"|\'[^\'\n]*\''),
-            ('NUMBER',     r'\b\d+(\.\d*)?\b|\b\.\d+\b'),
+            ('KEYWORD',    r'\b(if|else|while|for|def|return|True|False|None|continue|break)\b'),
+            ('OPERATOR',   r'==|!=|<=|>=|<|>|=|!|\+|-|\*|/|%|\(|\)|\[|\]|\{|\}|:|,|\.'),
+            ('STRING',     r'(\".*?\"|\'.*?\')'),
+            ('NUMBER',     r'\b\d+(\.\d*)?|\.\d+\b'),
             ('IDENTIFIER', r'[a-zA-Z_][a-zA-Z0-9_]*'),
             ('COMMENT',    r'#.*'),
-            ('WHITESPACE', r'[ \t]+'),
+            ('NEWLINE',    r'\n'),
+            ('SKIP',       r'[ \t]+'),
             ('MISMATCH',   r'.'),
         ]
+
         self.token_regex = re.compile('|'.join(f"(?P<{name}>{pattern})" for name, pattern in self.token_specs))
 
     def tokenize(self, code):
         tokens = []
-        lines = code.splitlines()
+        line_num = 1
+        line_start = 0
 
-        for line_number, line in enumerate(lines, start=1):
-            pos = 0
-            while pos < len(line):
-                match = self.token_regex.match(line, pos)
-                if not match:
-                    break
-                kind = match.lastgroup
-                value = match.group(kind)
-                start_idx = f"{line_number}.{pos}"
-                end_idx = f"{line_number}.{pos + len(value)}"
-                if kind not in ['WHITESPACE']:
-                    tokens.append(Token(kind, value, start_idx, end_idx))
-                pos = match.end()
+        for mo in self.token_regex.finditer(code):
+            kind = mo.lastgroup
+            value = mo.group(kind)
+            column = mo.start() - line_start
+
+            if kind == 'NEWLINE':
+                line_num += 1
+                line_start = mo.end()
+            elif kind == 'SKIP':
+                continue
+            elif kind == 'MISMATCH':
+                tokens.append(Token(kind, value, line_num, column))
+                print(f"Tanımsız karakter: {value!r} satır {line_num}, sütun {column}")
+            else:
+                tokens.append(Token(kind, value, line_num, column))
 
         return tokens
