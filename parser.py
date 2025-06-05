@@ -97,29 +97,41 @@ class Parser:
             expr = BinaryOpNode(expr, operator_token.value, right)
         return expr
 
-    def parse_term(self):  # Toplama/Çıkarma
-        expr = self.parse_factor()
-        ops = ['+', '-']
-        while self.check(TokenType.OPERATOR) and self.peek().value in ops:
-            operator_token = self.advance()
-            right = self.parse_factor()
-            expr = BinaryOpNode(expr, operator_token.value, right)
+    def parse_term(self):
+        # Toplama ve Çıkarma
+        expr = self.parse_factor()  # İlk olarak bir faktörü ayrıştır
+
+        while self.check(TokenType.OPERATOR) and (self.peek().value == '+' or self.peek().value == '-'):
+            operator = self.advance().value
+            right = self.parse_factor()  # Operatörden sonra yine bir faktör beklenir
+            expr = BinaryOpNode(expr, operator, right)
         return expr
 
-    def parse_factor(self):  # Çarpma/Bölme/Modül
-        expr = self.parse_unary()
-        ops = ['*', '/', '%']
-        while self.check(TokenType.OPERATOR) and self.peek().value in ops:
-            operator_token = self.advance()
-            right = self.parse_unary()
-            expr = BinaryOpNode(expr, operator_token.value, right)
+    def parse_factor(self):
+        # Çarpma ve Bölme
+        expr = self.parse_unary()  # İlk olarak bir unary ifadeyi ayrıştır
+
+        while self.check(TokenType.OPERATOR) and (self.peek().value == '*' or self.peek().value == '/'):
+            operator = self.advance().value
+
+            # BURADA KRİTİK NOKTA: Operatörden sonra bir 'ifade' beklenir.
+            # 'sayi1 + *5' durumunda, '*' operatöründen sonra doğrudan '5' gelmeli.
+            # Eğer '5' gelmezse veya '*' beklenmeyen bir konumdaysa, hata fırlatmalıyız.
+
+            # advance() sonrası birincil ifadeyi ayrıştırmaya çalış
+            right = self.parse_unary()  # Tekrar bir unary ifade bekliyoruz
+
+            expr = BinaryOpNode(expr, operator, right)
         return expr
 
     def parse_unary(self):
-        if self.match(TokenType.OPERATOR) and self.previous().value == '-':
-            operator = self.previous().value
-            operand = self.parse_unary()
+        # Tekli operatörler (+, -)
+        if self.check(TokenType.OPERATOR) and (self.peek().value == '+' or self.peek().value == '-'):
+            operator = self.advance().value
+            # Tekli operatörden sonra bir faktör beklenir.
+            operand = self.parse_unary()  # Özyinelemeli olarak unary ifadeyi ayrıştır
             return UnaryOpNode(operator, operand)
+        # Eğer bir unary operatör yoksa, birincil ifadeyi ayrıştır
         return self.parse_primary()
 
     def parse_primary(self):
@@ -134,27 +146,27 @@ class Parser:
         if self.match_keyword(TokenType.KEYWORD_NONE):
             return NoneNode()
 
-        # IDENTIFIER veya KEYWORD_PRINT
         if self.check(TokenType.IDENTIFIER) or self.check_keyword(TokenType.KEYWORD_PRINT):
             name_token = self.advance()
 
-            if self.match(TokenType.LPAREN):  # Fonksiyon çağrısı
+            if self.match(TokenType.LPAREN):
                 args = self.parse_arguments()
                 self.consume(TokenType.RPAREN, ')')
                 if name_token.type == TokenType.KEYWORD_PRINT:
                     return CallNode("print", args)
                 return CallNode(name_token.value, args)
 
-            return VariableNode(name_token.value)  # Sadece değişken
+            return VariableNode(name_token.value)
 
         if self.match(TokenType.LPAREN):
             expr = self.parse_expression()
             self.consume(TokenType.RPAREN, ')')
             return expr
 
-        # Hiçbirine uymadıysa, hata fırlat
-        raise ParserError(
-            f"Beklenmeyen token: {self.peek().type.name} ('{self.peek().value}') (Satır {self.peek().line}, Sütun {self.peek().column}). İfade bekleniyor.")
+        current_token = self.peek()
+        raise ParserError(f"Beklenen bir ifade (sayı, string, değişken, parantezli ifade vb.) bulunamadı. "
+                          f"Ancak '{current_token.value}' ({current_token.type.name}) bulundu. "
+                          f"(Satır {current_token.line}, Sütun {current_token.column})")
 
     def parse_arguments(self):
         args = []
