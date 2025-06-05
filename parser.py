@@ -15,53 +15,53 @@ class Parser:
     def parse(self):
         statements = []
         while self.peek().type != TokenType.EOF:
-            # Başlangıçta ve her statement'tan önce boş satırları atla
-            while self.match(TokenType.NEWLINE):
-                pass
+            self.skip_whitespace_and_comments()
 
-            # Yorumları da burada atlayabiliriz, Lexer'da COMMENT olarak token'laştığı varsayımıyla
-            while self.match(TokenType.COMMENT):
-                self.match(TokenType.NEWLINE)  # Yorumdan sonra NEWLINE varsa tüket
-                pass
-
-            if self.peek().type == TokenType.EOF:  # Yorum ve boş satırlardan sonra EOF geldiyse
+            if self.peek().type == TokenType.EOF:
                 break
 
+            # Hata toparlama için bir checkpoint oluştur
+            start_index = self.current
             try:
                 stmt = self.parse_statement()
                 if stmt:
                     statements.append(stmt)
-
-                # Her statement'tan sonra NEWLINE bekliyoruz (Python'ın kuralı)
-                # Ancak EOF gelmediyse ve NEWLINE yoksa hata fırlatabiliriz.
-                if self.peek().type != TokenType.EOF and not self.check(TokenType.NEWLINE):
-                    # print(f"Uyarı: Statement sonrası NEWLINE bekleniyor, bulundu: {self.peek()}")
-                    pass  # Şimdilik uyarı verelim, katı bir kural koymayalım
-
-                # Son statement'tan sonra veya bir bloktan sonra kalan NEWLINE'ları tüket
-                while self.match(TokenType.NEWLINE):
-                    pass
-
+                self.skip_newlines()  # Her statement'tan sonra NEWLINE'ları atla
             except ParserError as e:
-                print(f"Parser Hatası: {e} - Hata Token: {self.peek()}")
-                # Hata durumunda parser'ı ilerletmeye çalış
-                # Bir sonraki NEWLINE'a veya EOF'a kadar atla
+                # Hata durumunda parser'ın akışını iyileştirmek için
+                # Geçerli token'ı logla ve bir sonraki güvenli noktaya atla.
+                print(f"Parser Hatası: {e} - Hata Anındaki Token: {self.peek()}")
+
+                # Mevcut satırın sonuna atla
                 while self.peek().type not in [TokenType.NEWLINE, TokenType.EOF]:
                     self.advance()
-                if self.peek().type == TokenType.NEWLINE:
-                    self.advance()  # Yeni satırı atla
-                else:
-                    break  # EOF'a ulaşıldıysa döngüyü bitir
+                self.skip_newlines()  # Yeni satırları atla
+
+                # Eğer birden fazla hata oluştuysa, GUI sadece ilkini gösterebilir.
+                # Ancak burada hatayı fırlatarak GUI'nin bunu yakalamasını sağlarız.
+                # Normalde burada parser'ın bir sonraki statement'a devam etmesi gerekir.
+                # Ancak biz GUI'de ilk hatayı görmek istediğimiz için ilk hatayı fırlatabiliriz.
+                # Şimdilik, yakalanan hatayı GUI'ye iletmek için tekrar fırlatacağız.
+                raise e  # Yakaladığımız ParserError'ı tekrar fırlat ki main.py yakalasın.
+
         return ProgramNode(statements)
+
+    def skip_whitespace_and_comments(self):
+        while True:
+            if self.match(TokenType.NEWLINE):
+                continue
+            if self.match(TokenType.COMMENT):
+                if self.check(TokenType.NEWLINE):
+                    self.match(TokenType.NEWLINE)
+                continue
+            break
+
+    def skip_newlines(self):
+        while self.match(TokenType.NEWLINE):
+            pass
 
     def parse_statement(self):
         token = self.peek()
-
-        if token.type == TokenType.COMMENT:  # Yorumu atla, AST'ye ekleme
-            self.advance()
-            # Yorumdan sonra NEWLINE olması beklenir. Eğer yoksa, lexer'ın hatasıdır.
-            # self.consume(TokenType.NEWLINE, None) # Yorumdan sonra NEWLINE bekleriz, yoksa hata
-            return None  # Yorumlar AST'ye girmez
 
         if self.check_keyword(TokenType.KEYWORD_IF):
             return self.parse_if_statement()
@@ -75,10 +75,10 @@ class Parser:
         # Atama veya Expression Statement
         expr = self.parse_expression()
 
-        # Atama operatörü sadece eşittir (=)
         if self.match(TokenType.OPERATOR) and self.previous().value == '=':
             if not isinstance(expr, VariableNode):
-                raise ParserError(f"Geçersiz atama hedefi: {expr} (Satır {token.line})")
+                raise ParserError(
+                    f"Geçersiz atama hedefi. Değişken bekleniyor, ancak '{expr.__class__.__name__}' bulundu. (Satır {token.line})")
             return AssignmentNode(expr.name, self.parse_expression())
 
         return ExpressionStatementNode(expr)
@@ -126,7 +126,7 @@ class Parser:
         if self.match(TokenType.NUMBER):
             return NumberNode(float(self.previous().value))
         if self.match(TokenType.STRING):
-            return StringNode(self.previous().value[1:-1])  # Tırnakları kaldır
+            return StringNode(self.previous().value[1:-1])
         if self.match_keyword(TokenType.KEYWORD_TRUE):
             return BooleanNode(True)
         if self.match_keyword(TokenType.KEYWORD_FALSE):
@@ -134,31 +134,27 @@ class Parser:
         if self.match_keyword(TokenType.KEYWORD_NONE):
             return NoneNode()
 
-        if self.check(TokenType.IDENTIFIER):
+        # IDENTIFIER veya KEYWORD_PRINT
+        if self.check(TokenType.IDENTIFIER) or self.check_keyword(TokenType.KEYWORD_PRINT):
             name_token = self.advance()
-            # print fonksiyonu için özel kontrol
-            if name_token.type == TokenType.KEYWORD_PRINT or (
-                    name_token.type == TokenType.IDENTIFIER and name_token.value == 'print'):
-                # Python'da print bir fonksiyon çağrısıdır: print(arg)
-                self.consume(TokenType.LPAREN, '(')
-                args = self.parse_arguments()
-                self.consume(TokenType.RPAREN, ')')
-                return CallNode("print", args)  # Fonksiyon adı string olarak
 
-            # Diğer fonksiyon çağrıları (kullanıcı tanımlı)
-            if self.match(TokenType.LPAREN):
+            if self.match(TokenType.LPAREN):  # Fonksiyon çağrısı
                 args = self.parse_arguments()
                 self.consume(TokenType.RPAREN, ')')
+                if name_token.type == TokenType.KEYWORD_PRINT:
+                    return CallNode("print", args)
                 return CallNode(name_token.value, args)
 
-            return VariableNode(name_token.value)
+            return VariableNode(name_token.value)  # Sadece değişken
 
         if self.match(TokenType.LPAREN):
             expr = self.parse_expression()
             self.consume(TokenType.RPAREN, ')')
             return expr
 
-        raise ParserError(f"Beklenen ifade bulunamadı, ancak bulundu: {self.peek()}")
+        # Hiçbirine uymadıysa, hata fırlat
+        raise ParserError(
+            f"Beklenmeyen token: {self.peek().type.name} ('{self.peek().value}') (Satır {self.peek().line}, Sütun {self.peek().column}). İfade bekleniyor.")
 
     def parse_arguments(self):
         args = []
@@ -171,55 +167,37 @@ class Parser:
     # --- Blok ve Yapısal Metodlar ---
     def parse_block(self):
         statements = []
-        # Blok başlamadan önce beklenen NEWLINE token'larını tüket
-        while self.match(TokenType.NEWLINE):
-            pass
-
-        self.consume(TokenType.INDENT, None)  # Beklenen INDENT token'ını tüket
+        self.skip_newlines()
+        self.consume(TokenType.INDENT, None)
 
         while not (self.check(TokenType.DEDENT) or self.peek().type == TokenType.EOF):
-            # Blok içindeki her statement'tan önce NEWLINE ve COMMENT'ları atla
-            while self.match(TokenType.NEWLINE) or self.match(TokenType.COMMENT):
-                if self.previous().type == TokenType.COMMENT:
-                    self.match(TokenType.NEWLINE)  # Yorumdan sonra NEWLINE varsa tüket
-                pass
+            self.skip_whitespace_and_comments()
 
-            # Eğer hala DEDENT gelmediyse ve EOF değilse, bir ifade ayrıştır
-            if not (self.check(TokenType.DEDENT) or self.peek().type == TokenType.EOF):
-                stmt = self.parse_statement()
-                if stmt:  # Yorumlar None döndürdüğü için sadece geçerli statement'ları ekle
-                    statements.append(stmt)
+            if self.check(TokenType.DEDENT) or self.peek().type == TokenType.EOF:
+                break
 
-                # Her statement sonrası NEWLINE bekliyoruz, yoksa hata
-                # (Şimdilik esnek olalım, eğer NEWLINE yoksa da devam etsin ama hata fırlatabiliriz)
-                if self.peek().type != TokenType.EOF and not self.check(TokenType.NEWLINE) and not self.check(
-                        TokenType.DEDENT):
-                    # print(f"Uyarı: Blok içinde statement sonrası NEWLINE bekleniyor, bulundu: {self.peek()}")
-                    pass
+            stmt = self.parse_statement()
+            if stmt:
+                statements.append(stmt)
 
-                while self.match(TokenType.NEWLINE):  # Statement sonrası kalan NEWLINE'ları atla
-                    pass
+            self.skip_newlines()
 
-        # Blok bittiğinde DEDENT token'ını tüket
         self.consume(TokenType.DEDENT, None)
         return statements
 
     def parse_if_statement(self):
         self.consume_keyword(TokenType.KEYWORD_IF)
         condition = self.parse_expression()
-        self.consume(TokenType.COLON, ':')
-        self.consume(TokenType.NEWLINE)  # Koşuldan sonraki NEWLINE'ı tüket
+        self.consume(TokenType.COLON, ':')  # Burada ':' token'ını bekliyoruz
+        self.skip_newlines()
 
-        body = self.parse_block()  # INDENT/DEDENT tarafından yönetilen blok
+        body = self.parse_block()
 
         else_body = []
         if self.check_keyword(TokenType.KEYWORD_ELSE):
-            # Else'den önce DEDENT zaten parse_block tarafından tüketilmelidir
-            # Eğer parser'ın DEDENT'ı tüketmediği bir durum varsa burada bir hata olabilir.
-
             self.advance()  # ELSE keyword'ünü tüket
-            self.consume(TokenType.COLON, ':')
-            self.consume(TokenType.NEWLINE)  # ELSE'den sonraki NEWLINE'ı tüket
+            self.consume(TokenType.COLON, ':')  # ELSE'den sonraki ':' token'ını bekliyoruz
+            self.skip_newlines()
             else_body = self.parse_block()
 
         return IfNode(condition, body, else_body)
@@ -275,13 +253,15 @@ class Parser:
     def consume(self, type_, value_to_check=None):
         if self.check(type_, value_to_check):
             return self.advance()
+
         actual = self.peek()
         expected_str = type_.name
         if value_to_check:
             expected_str += f" ('{value_to_check}')"
-        # Hata mesajında token'ın tam değerini ve konumunu ekle
-        raise ParserError(
-            f"Beklenen {expected_str} ancak bulundu: {actual.type.name} ('{actual.value}') (Satır {actual.line}, Sütun {actual.column})")
+
+        # Hata mesajını daha da netleştirelim
+        raise ParserError(f"Beklenen {expected_str} ancak bulundu: {actual.type.name} ('{actual.value}'). "
+                          f"Token: {actual.type.name} ('{actual.value}') (Satır {actual.line}, Sütun {actual.column})")
 
     def consume_keyword(self, keyword_type):
         if self.check_keyword(keyword_type):
