@@ -90,6 +90,12 @@ print(x)
             if tag not in ['sel', 'insert']:
                 self.text_area.tag_remove(tag, "1.0", tk.END)
 
+        self.show_error("")  # Önceki hataları temizle
+        self.ast_output.config(state=tk.NORMAL)
+        self.ast_output.delete("1.0", tk.END)
+        self.ast_output.insert("1.0", "Abstract Syntax Tree:\n")
+        self.ast_output.config(state=tk.DISABLED)
+
         try:
             tokens = self.lexer.tokenize(code)
 
@@ -103,24 +109,35 @@ print(x)
                 start = f"{token.line}.{token.column}"
                 end = f"{token.line}.{token.column + len(str(token.value))}"
 
-                # Token tipinin adını doğrudan kullan
                 if tag_name in self.text_area.tag_names():
                     self.text_area.tag_add(tag_name, start, end)
-                # Özel durumlar için (örn: OPERATOR)
-                elif token.type == TokenType.OPERATOR and 'operator' in self.text_area.tag_names():
+                elif token.type == TokenType.OPERATOR:  # Genel operatör etiketi
                     self.text_area.tag_add('operator', start, end)
+                elif token.type == TokenType.MISMATCH:  # Hatalı token'ları vurgula
+                    self.text_area.tag_add('mismatch', start, end)
 
             # AST Oluşturma ve Gösterme
             parser = Parser(tokens)
             ast = parser.parse()
             self.update_ast_output(ast)
-            self.show_error("")
+            # Eğer parser hata fırlatmadıysa ama bir hata mesajı yazdıysa
+            if "Parser Hatası:" in self.ast_output.get("1.0", tk.END):
+                self.show_error("Parser tamamlandı, ancak hatalar bulundu (AST çıktısına bakınız).")
 
-        except Exception as e:
-            self.show_error(f"Error: {str(e)}")
+
+        except ParserError as e:  # Sadece ParserError'ı yakala
+            self.show_error(f"❌ Parser Hatası: {str(e)}")
             self.ast_output.config(state=tk.NORMAL)
             self.ast_output.delete("1.0", tk.END)
-            self.ast_output.insert("1.0", f"❌ Error: {str(e)}\n\n")
+            self.ast_output.insert("1.0", f"❌ Parser Hatası: {str(e)}\n\n")
+            self.ast_output.insert(tk.END, "Daha fazla detay için PyCharm konsolunu kontrol edin.\n")
+            self.ast_output.config(state=tk.DISABLED)
+
+        except Exception as e:  # Diğer genel hataları yakala
+            self.show_error(f"❌ Uygulama Hatası: {str(e)}")
+            self.ast_output.config(state=tk.NORMAL)
+            self.ast_output.delete("1.0", tk.END)
+            self.ast_output.insert("1.0", f"❌ Uygulama Hatası: {str(e)}\n\n")
             import traceback
             error_details = traceback.format_exc(limit=1).strip().split('\n')[-1]
             self.ast_output.insert(tk.END, f"Details: {error_details}\n")
