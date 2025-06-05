@@ -12,65 +12,50 @@ class SyntaxHighlighterGUI:
         self.master = master
         master.title("Python Syntax Highlighter")
 
-        # Lexer ve Parser başlat
         self.lexer = Lexer()
-        self.parser = Parser([])  # Başlangıçta boş token listesi
+        self.parser = Parser([])  # Başlangıçta boş token listesi ile oluştur
 
-        # Ana çerçeve
         self.main_frame = tk.Frame(master)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Satır Numaraları İçin Yeni Bölüm Başlangıcı
         self.line_numbers = tk.Text(self.main_frame, width=4, padx=3, pady=3, takefocus=0,
                                     border=0, background='#f0f0f0', state='disabled',
                                     wrap='none', font=("Consolas", 10))
         self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
-        # Satır Numaraları İçin Yeni Bölüm Sonu
 
-        # Metin alanı (ScrolledText kullanmaya devam)
         self.text_area = scrolledtext.ScrolledText(self.main_frame, wrap=tk.WORD,
                                                    font=("Consolas", 10),
                                                    undo=True)
         self.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # Hata mesajı etiketi
-        self.error_label = tk.Label(master, text="", fg="red")
+        # Hata mesajı etiketi - arka plan rengini de kontrol edeceğiz
+        self.error_label = tk.Label(master, text="", fg="white", bg="lightgreen")
         self.error_label.pack(side=tk.TOP, fill=tk.X, pady=2)
 
-        # AST çıktısı alanı
+        # AST çıktısı ve hata mesajları için Text widget'ı, başlangıçta DISABLED
         self.ast_output = scrolledtext.ScrolledText(master, wrap=tk.WORD,
                                                     font=("Consolas", 10),
                                                     height=15, state='disabled')
         self.ast_output.pack(fill=tk.BOTH, expand=True)
 
-        # Etiket stillerini tanımla
         self.define_tags()
 
-        # Metin alanındaki değişiklikleri izle
         self.text_area.bind("<<Modified>>", self.on_text_modified)
-
-        # --- Satır Numaralarını Güncellemek İçin Bindings (DÜZELTME BAŞLANGICI) ---
         self.text_area.bind("<KeyRelease>", self.on_key_release)
-        self.text_area.bind("<MouseWheel>", self.on_text_scroll)  # Windows/Linux
-        self.text_area.bind("<Button-4>", self.on_text_scroll)  # MacOS (Scroll Up)
-        self.text_area.bind("<Button-5>", self.on_text_scroll)  # MacOS (Scroll Down)
+        self.text_area.bind("<MouseWheel>", self.on_text_scroll)
+        self.text_area.bind("<Button-4>", self.on_text_scroll)
+        self.text_area.bind("<Button-5>", self.on_text_scroll)
 
-        # İki metin alanının kaydırma çubuklarını birbirine bağlama
-        # text_area'nın dikey kaydırma çubuğu hareket ettiğinde line_numbers'ı kaydır
-        self.text_area.vbar.config(command=self.yview_all)  # Yeni yview_all metodunu kullanacağız
-
-        # line_numbers için ayrı bir kaydırma çubuğu yoktur, sadece text_area'nın scrollbar'ını takip eder.
-        # Bu yüzden aşağıdaki satır kaldırıldı:
-        # self.line_numbers.vbar['command'] = self.yview_text_area
+        # text_area'nın kaydırma çubuğunu hem kendi yview'ine hem de line_numbers'ın yview'ine bağla
+        self.text_area.vbar.config(command=self.yview_text_and_numbers)
 
         self.update_line_numbers()  # Başlangıçta satır numaralarını oluştur
-        # --- Satır Numaralarını Güncellemek İçin Bindings (DÜZELTME SONU) ---
 
-
-        self.text_area.edit_modified(False)  # Modified flag'ı temizle
+        # self.initial_code = """...""" ve insert satırları kaldırıldı
+        self.text_area.edit_modified(False)
         self.highlight_syntax()  # Başlangıçta sözdizimini vurgula
 
-        # --- YENİ veya GÜNCELLENMİŞ KAYDIRMA METODLARI ---
+        # ---KAYDIRMA METODLARI ---
 
     def yview_all(self, *args):
         # Hem metin alanını hem de satır numaralarını senkronize olarak kaydır
@@ -114,21 +99,14 @@ class SyntaxHighlighterGUI:
     def on_text_modified(self, event=None):
         if self.text_area.edit_modified():
             self.highlight_syntax()
-            self.update_line_numbers()  # Satır numaralarını da güncelle
+            self.update_line_numbers()
             self.text_area.edit_modified(False)
 
     def on_key_release(self, event):
-        # Her tuşa basıldığında satır numaralarını ve sözdizimini güncelle
         self.highlight_syntax()
         self.update_line_numbers()
 
     def on_text_scroll(self, event):
-        # Metin alanı kaydırıldığında satır numaralarını güncelle
-        self.update_line_numbers()
-
-    def yview_line_numbers(self, *args):
-        # Metin alanının kaydırma çubuğu hareket ettiğinde satır numaralarını da kaydır
-        self.line_numbers.yview_moveto(args[0])
         self.update_line_numbers()
 
     def yview_text_area(self, *args):
@@ -136,27 +114,32 @@ class SyntaxHighlighterGUI:
         self.text_area.yview_moveto(args[0])
         self.update_line_numbers()
 
+    def yview_text_and_numbers(self, *args):
+        """
+        hem text_area'yı hem de satır numaralarını senkronize olarak kaydırır.
+        """
+        self.text_area.yview(*args)
+        self.line_numbers.yview(*args)
+        self.update_line_numbers()  # Kaydırma sonrası satır numaralarını güncelle
+
     def update_line_numbers(self):
-        # Satır numaralarını güncelleyen ana metod
-        self.line_numbers.config(state='normal')  # Düzenlemeyi etkinleştir
-        self.line_numbers.delete("1.0", tk.END)  # Mevcut numaraları sil
+        """
+        text_area'daki satır sayısına göre satır numaralarını günceller.
+        """
+        self.line_numbers.config(state='normal')  # Yazmak için etkinleştir
+        self.line_numbers.delete("1.0", tk.END)  # Tüm mevcut satır numaralarını sil
 
-        # Metin alanının ilk ve son görünen satırlarını al
-        first_visible_line, last_visible_line = self.text_area.yview()
-        start_line_index = int(self.text_area.index(f"@{0},{0}").split('.')[0])  # Görünür alanın başlangıç satırı
-        end_line_index = int(self.text_area.index(tk.END).split('.')[0])  # Toplam satır sayısı
-
-        # Görünür alana göre satır numaralarını ekle
+        # text_area'daki satır sayısını al
         line_count = int(self.text_area.index('end-1c').split('.')[0])
 
-        # Sadece görünen satırları değil, tüm satırları numaralandırmak daha kolay ve doğru olur
-        # Çünkü kaydırma çubuğu ile tüm satırlar numaralandırılmalı.
+        # Her satır için numara ekle
         for i in range(1, line_count + 1):
             self.line_numbers.insert(tk.END, f"{i}\n")
 
-        # Metin alanıyla satır numaralarını senkronize et
+        # Satır numarası alanını, ana metin alanının kaydırma konumuna eşitle
         self.line_numbers.yview_moveto(self.text_area.yview()[0])
-        self.line_numbers.config(state='disabled')  # Tekrar düzenlemeyi devre dışı bırak
+        self.line_numbers.config(state='disabled')  # Yazma bittikten sonra tekrar devre dışı bırak
+
 
     def setup_ui(self):
         self.text_area = ScrolledText(self.master, wrap="word", width=80, height=20,
@@ -201,23 +184,12 @@ class SyntaxHighlighterGUI:
             'if', 'else', 'while', 'def', 'return', 'True', 'False', 'None', 'print'
         ]
 
-    def on_key_release(self, event=None):
-        if hasattr(self, '_after_id'):
-            self.master.after_cancel(self._after_id)
-        self._after_id = self.master.after(300, self.highlight_syntax)
-
     def highlight_syntax(self):
         code = self.text_area.get("1.0", tk.END)
 
         for tag in self.text_area.tag_names():
             if tag not in ['sel', 'insert']:
                 self.text_area.tag_remove(tag, "1.0", tk.END)
-
-        self.show_error("")  # Önceki hataları temizle
-        self.ast_output.config(state=tk.NORMAL)
-        self.ast_output.delete("1.0", tk.END)
-        self.ast_output.insert("1.0", "Abstract Syntax Tree:\n")
-        self.ast_output.config(state=tk.DISABLED)
 
         try:
             tokens = self.lexer.tokenize(code)
@@ -240,43 +212,72 @@ class SyntaxHighlighterGUI:
             # AST Oluşturma ve Gösterme
             parser = Parser(tokens)
             ast = parser.parse()
-            self.update_ast_output(ast)
-            self.show_error("")  # Hata yoksa hata mesajını temizle
+            self.update_ast_output(ast)  # Geçerli AST'yi gönderiyoruz
 
+            # --- Hata yoksa: Yeşil renk ve "Kod Hatasız!" mesajı ---
+            self.show_error("Kod Hatasız!", color="green")
 
         except ParserError as e:
-            self.show_error(f"Parser Hatası: {e}")
+            # Parser hatasında AST çıktısını temizle ve hata mesajını göster
             self.ast_output.config(state=tk.NORMAL)
             self.ast_output.delete("1.0", tk.END)
             self.ast_output.insert("1.0", f"❌ Parser Hatası: {str(e)}\n\n")
             self.ast_output.config(state=tk.DISABLED)
+            # --- Hata varsa: Kırmızı renk ve hata mesajı ---
+            self.show_error(f"Parser Hatası: {e}", color="red")
+
         except Exception as e:
-            self.show_error(f"Genel Hata: {str(e)}")
+            # Diğer genel hatalarda AST çıktısını temizle ve hata mesajını göster
             self.ast_output.config(state=tk.NORMAL)
             self.ast_output.delete("1.0", tk.END)
-            self.ast_output.insert("1.0", f"❌ Hata: {str(e)}\n\n")
+            self.ast_output.insert("1.0", f"❌ Genel Hata: {str(e)}\n\n")
             import traceback
             error_details = traceback.format_exc(limit=1).strip().split('\n')[-1]
             self.ast_output.insert(tk.END, f"Detaylar: {error_details}\n")
             self.ast_output.config(state=tk.DISABLED)
+            # --- Diğer hatalar varsa: Kırmızı renk ve hata mesajı ---
+            self.show_error(f"Genel Hata: {str(e)}", color="red")
 
+    # update_ast_output metodu (Sınıfın doğrudan bir metodu olmalı)
     def update_ast_output(self, ast_nodes):
-        self.ast_output.config(state=tk.NORMAL)
+        self.ast_output.config(state=tk.NORMAL)  # Yazmak için etkinleştir
         self.ast_output.delete("1.0", tk.END)
         self.ast_output.insert("1.0", "Abstract Syntax Tree:\n\n")
 
+        # print_node fonksiyonu, update_ast_output metodunun içinde tanımlanmıştır.
+        # Bu fonksiyon, AST düğümlerini özyinelemeli olarak yazdırır.
         def print_node(node, indent_level=0):
             indent_str = "  " * indent_level
-            self.ast_output.insert(tk.END, f"{indent_str}• {node}\n")
+            # Başlangıçta düğümün sınıf adını yazdır
+            self.ast_output.insert(tk.END, f"{indent_str}• {node.__class__.__name__}")
 
+            # Düğüm tipine göre detayları ekle
             if isinstance(node, ProgramNode):
+                self.ast_output.insert(tk.END, "(statements=[")
+                if node.statements:
+                    # İlk statement'ın tipini göster, ardından '...' eğer birden fazlaysa
+                    self.ast_output.insert(tk.END, f"{node.statements[0].__class__.__name__}")
+                if len(node.statements) > 1:
+                    self.ast_output.insert(tk.END, ", ...")
+                self.ast_output.insert(tk.END, "])\n")
                 for stmt in node.statements:
                     print_node(stmt, indent_level + 1)
+
             elif isinstance(node, AssignmentNode):
+                # identifier ve expression kullanılıyor
+                self.ast_output.insert(tk.END,
+                                       f"(identifier='{node.identifier}', expression={node.expression.__class__.__name__})\n")
                 print_node(node.expression, indent_level + 1)
+
             elif isinstance(node, ExpressionStatementNode):
+                self.ast_output.insert(tk.END, f"(expression={node.expression.__class__.__name__})\n")
                 print_node(node.expression, indent_level + 1)
+
             elif isinstance(node, IfNode):
+                self.ast_output.insert(tk.END,
+                                       f"(condition={node.condition.__class__.__name__}, body=[...], else=[...])\n")
+                self.ast_output.insert(tk.END, f"{indent_str}  Condition:\n")
+                print_node(node.condition, indent_level + 2)
                 self.ast_output.insert(tk.END, f"{indent_str}  Body:\n")
                 for stmt in node.body:
                     print_node(stmt, indent_level + 2)
@@ -284,35 +285,84 @@ class SyntaxHighlighterGUI:
                     self.ast_output.insert(tk.END, f"{indent_str}  Else Body:\n")
                     for stmt in node.else_body:
                         print_node(stmt, indent_level + 2)
+
             elif isinstance(node, WhileNode):
+                self.ast_output.insert(tk.END, f"(condition={node.condition.__class__.__name__}, body=[...])\n")
+                self.ast_output.insert(tk.END, f"{indent_str}  Condition:\n")
+                print_node(node.condition, indent_level + 2)
                 self.ast_output.insert(tk.END, f"{indent_str}  Body:\n")
                 for stmt in node.body:
                     print_node(stmt, indent_level + 2)
+
             elif isinstance(node, FunctionDefNode):
-                self.ast_output.insert(tk.END, f"{indent_str}  Params: {node.params}\n")
+                # name, params, body kullanılıyor
+                self.ast_output.insert(tk.END, f"(name='{node.name}', params={node.params}, body=[...])\n")
+                self.ast_output.insert(tk.END, f"{indent_str}  Params: {', '.join(node.params)}\n")
                 self.ast_output.insert(tk.END, f"{indent_str}  Body:\n")
                 for stmt in node.body:
                     print_node(stmt, indent_level + 2)
-            elif isinstance(node, ReturnNode) and node.expression:
-                print_node(node.expression, indent_level + 1)
+
+            elif isinstance(node, ReturnNode):
+                # expression kullanılıyor
+                self.ast_output.insert(tk.END,
+                                       f"(expression={node.expression.__class__.__name__ if node.expression else 'None'})\n")
+                if node.expression:  # expression null olabilir
+                    print_node(node.expression, indent_level + 1)
+
             elif isinstance(node, CallNode):
+                # func_name ve arguments kullanılıyor
+                self.ast_output.insert(tk.END, f"(func='{node.func_name}', args=[...])\n")
                 self.ast_output.insert(tk.END, f"{indent_str}  Args:\n")
-                for arg in node.arguments:
+                for arg in node.arguments:  # arguments kullanıldı
                     print_node(arg, indent_level + 2)
+
             elif isinstance(node, BinaryOpNode):
+                # left, operator, right kullanılıyor
+                self.ast_output.insert(tk.END,
+                                       f"(left={node.left.__class__.__name__}, operator='{node.operator}', right={node.right.__class__.__name__})\n")
                 print_node(node.left, indent_level + 1)
                 print_node(node.right, indent_level + 1)
+
             elif isinstance(node, UnaryOpNode):
+                # operator, operand kullanılıyor
+                self.ast_output.insert(tk.END,
+                                       f"(operator='{node.operator}', operand={node.operand.__class__.__name__})\n")
                 print_node(node.operand, indent_level + 1)
 
+            elif isinstance(node, NumberNode):
+                # value kullanılıyor
+                self.ast_output.insert(tk.END, f"({node.value})\n")
+
+            elif isinstance(node, StringNode):
+                # value kullanılıyor
+                self.ast_output.insert(tk.END, f"(\"{node.value}\")\n")
+
+            elif isinstance(node, VariableNode):
+                # name kullanılıyor
+                self.ast_output.insert(tk.END, f"('{node.name}')\n")
+
+            elif isinstance(node, BooleanNode):
+                # value kullanılıyor
+                self.ast_output.insert(tk.END, f"({node.value})\n")
+
+            elif isinstance(node, NoneNode):
+                self.ast_output.insert(tk.END, "(None)\n")
+
+            else:
+                # Tanımsız bir düğüm türü gelirse, genel bir temsilini yazdır.
+                # __repr__ metodunun düzgün çalıştığından emin olmak için bu faydalıdır.
+                self.ast_output.insert(tk.END, f"({node.__class__.__name__} object)\n")
+
+        # Ana AST düğümünü yazdırmaya başla (ProgramNode beklenir)
         if isinstance(ast_nodes, ProgramNode):
             print_node(ast_nodes)
         else:
-            for node in ast_nodes:
-                self.ast_output.insert(tk.END, f"• {node}\n")
+            # Eğer ast_nodes bir ProgramNode değilse, doğrudan yazdır.
+            # Bu genellikle tek bir ifadeyi test ederken veya parser tam bir ProgramNode döndürmediğinde olur.
+            self.ast_output.insert(tk.END, f"• {ast_nodes.__class__.__name__}: {ast_nodes}\n")
 
-        self.ast_output.config(state=tk.DISABLED)
-        self.ast_output.see(tk.END)
+        self.ast_output.config(state=tk.DISABLED)  # Yazma bittikten sonra devre dışı bırak
+        self.ast_output.see(tk.END)  # En son satırı göster (kaydırma için)
 
     def show_error(self, message):
         self.error_label.config(text=message)
@@ -331,6 +381,15 @@ class SyntaxHighlighterGUI:
             self.text_area.delete("insert-1c wordstart", "insert-1c wordend")
             self.text_area.insert("insert", matches[0])
         return "break"
+
+    def show_error(self, message, color="green"):  # Renk parametresi eklendi, varsayılan yeşil
+        self.error_label.config(text=message, fg="white", bg=color)  # Metin beyaz, arka plan renkli
+        # Hata mesajı boş değilse 5 saniye sonra temizle (sadece yeşil mesajlar için belki kaldırmalı?)
+        # Ya da hata mesajı varsa ve kırmızı ise temizleme, yeşil ise temizle gibi bir mantık eklenebilir.
+        # Şimdilik, hata mesajı varsa (kırmızı veya yeşil) her zaman gösterelim.
+        # Eğer yeşil "Kod Hatasız!" mesajını bir süre sonra kaybolmasını isterseniz, aşağıdaki satırı etkin bırakabilirsiniz:
+        # if message and color == "green":
+        #     self.master.after(5000, lambda: self.error_label.config(text="", bg="lightgray")) # 5 saniye sonra temizle ve gri yap
 
 
 def main():
