@@ -130,5 +130,3 @@ class NoneNode(Node):
 
     def __repr__(self):
         return "None"
-
-# PassNode, BreakNode, ContinueNode kaldırıldı
