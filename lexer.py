@@ -44,23 +44,16 @@ class Lexer:
         line_num = 1
         indent_stack = [0]
 
-        # Tüm kodu satırlara ayır, her satırın sonunda '\n' karakterini koru
-        # Bu, girinti analizi için önemlidir.
         lines = code.splitlines(keepends=True)
-
-        # Son satır boş değilse ve '\n' ile bitmiyorsa, sona bir '\n' ekle
-        # Bu, EOF öncesi son girinti kontrolünü sağlamak için önemlidir.
         if lines and not lines[-1].endswith('\n'):
             lines[-1] += '\n'
 
-        # Tüm kodun sonuna fazladan bir NEWLINE eklemek bazen parser'ın işini kolaylaştırır
-        # (girinti kontrolü için). Ancak bu her zaman gerekli değildir.
-        # Şimdilik mevcut mantığı koruyalım.
-
         for line_idx, line in enumerate(lines):
-            original_line_num = line_num  # Geçerli satır numarasını koruyalım
+            # Boş satırları tamamen atla. Lexer boş satırlar için token üretmemeli.
+            if not line.strip():
+                line_num += 1
+                continue
 
-            # Girinti miktarını belirle (sadece boşlukları say)
             current_line_indent = 0
             for char in line:
                 if char == ' ':
@@ -70,46 +63,39 @@ class Lexer:
                 else:
                     break
 
-            # Gerçek kod içeriğini al (girintileri atlayarak)
-            code_content_on_line = line[current_line_indent:].rstrip('\n')  # Yeni satırı da atla
+            code_content_on_line = line[current_line_indent:].rstrip('\n')
 
-            # Yorum satırı mı veya sadece boşluk mu kontrol et
-            is_empty_or_comment = False
-            if not code_content_on_line.strip():  # Sadece boşluk veya boş satır
-                is_empty_or_comment = True
-            elif code_content_on_line.strip().startswith('#'):  # Yorum satırı
-                is_empty_or_comment = True
+            # Yorum satırları için sadece COMMENT token'ı ve NEWLINE üret
+            if code_content_on_line.startswith('#'):
+                tokens.append(Token(TokenType.COMMENT, code_content_on_line, line_num, current_line_indent))
+                tokens.append(Token(TokenType.NEWLINE, '\n', line_num, len(line.rstrip('\n'))))
+                line_num += 1
+                continue
 
-            # Girinti kontrolü sadece boş olmayan, yorum olmayan satırlar için yapılmalı
-            # VEYA, her satır için girinti token'ları üretip parser'ın boşlukları atlamasına izin verebiliriz.
-            # Şu anki mantık, her satırın girintisini kontrol ediyor ve boş satırları atlıyor.
-            # Boş satırlar için INDENT/DEDENT üretmemek önemlidir.
+            # Girinti kontrolü (sadece boş ve yorum olmayan satırlar için)
+            if current_line_indent > indent_stack[-1]:
+                tokens.append(Token(TokenType.INDENT, '', line_num, indent_stack[-1]))
+                indent_stack.append(current_line_indent)
+            elif current_line_indent < indent_stack[-1]:
+                while current_line_indent < indent_stack[-1]:
+                    if not indent_stack:
+                        raise RuntimeError(f"Aşırı girinti azaltma hatası (DEDENT) satır {line_num}")
+                    tokens.append(Token(TokenType.DEDENT, '', line_num, indent_stack[-1]))
+                    indent_stack.pop()
+                if current_line_indent != indent_stack[-1]:
+                    raise RuntimeError(
+                        f"Geçersiz girinti seviyesi satır {line_num}: {current_line_indent} yerine {indent_stack[-1]} bekleniyor")
 
-            if not is_empty_or_comment:
-                if current_line_indent > indent_stack[-1]:
-                    tokens.append(Token(TokenType.INDENT, '', original_line_num, indent_stack[-1]))
-                    indent_stack.append(current_line_indent)
-                elif current_line_indent < indent_stack[-1]:
-                    while current_line_indent < indent_stack[-1]:
-                        if not indent_stack:
-                            raise RuntimeError(f"Aşırı girinti azaltma hatası (DEDENT) satır {original_line_num}")
-                        tokens.append(Token(TokenType.DEDENT, '', original_line_num, indent_stack[-1]))
-                        indent_stack.pop()
-                    if current_line_indent != indent_stack[-1]:
-                        raise RuntimeError(
-                            f"Geçersiz girinti seviyesi satır {original_line_num}: {current_line_indent} yerine {indent_stack[-1]} bekleniyor")
-
-            # Satır içi tokenleme
+            # Satır içi tokenleme (gerçek kod içeriği için)
             current_column = 0
             while current_column < len(code_content_on_line):
                 match = self.full_regex.match(code_content_on_line, current_column)
 
                 if not match:
                     char = code_content_on_line[current_column]
-                    tokens.append(
-                        Token(TokenType.MISMATCH, char, original_line_num, current_line_indent + current_column))
+                    tokens.append(Token(TokenType.MISMATCH, char, line_num, current_line_indent + current_column))
                     print(
-                        f"Uyarı: Tanımlanamayan karakter: '{char}' (Satır {original_line_num}, Sütun {current_line_indent + current_column})")
+                        f"Uyarı: Tanımlanamayan karakter: '{char}' (Satır {line_num}, Sütun {current_line_indent + current_column})")
                     current_column += 1
                     continue
 
@@ -119,37 +105,30 @@ class Lexer:
 
                 if kind == 'WHITESPACE':
                     pass
-                elif kind == 'NEWLINE':  # Bu durum normalde code_content_on_line'da olmaz, rstrip('\n') yüzünden
-                    pass  # Burada NEWLINE token'ı üretmek yerine, satırın sonunda tek bir NEWLINE ekleyeceğiz.
                 elif kind == 'IDENTIFIER' and value in self.keywords:
-                    tokens.append(Token(self.keywords[value], value, original_line_num, token_column))
+                    tokens.append(Token(self.keywords[value], value, line_num, token_column))
                 elif kind == 'STRING':
-                    tokens.append(Token(TokenType.STRING, value, original_line_num, token_column))
+                    tokens.append(Token(TokenType.STRING, value, line_num, token_column))
                 elif kind == 'OPERATOR':
-                    tokens.append(Token(TokenType.OPERATOR, value, original_line_num, token_column))
+                    tokens.append(Token(TokenType.OPERATOR, value, line_num, token_column))
                 elif kind in ['LPAREN', 'RPAREN', 'COLON', 'COMMA']:
-                    tokens.append(Token(TokenType[kind], value, original_line_num, token_column))
-                elif kind == 'COMMENT':  # Yorum token'ı olarak ekle
-                    tokens.append(Token(TokenType.COMMENT, value, original_line_num, token_column))
+                    tokens.append(Token(TokenType[kind], value, line_num, token_column))
                 else:
-                    tokens.append(Token(TokenType[kind], value, original_line_num, token_column))
+                    tokens.append(Token(TokenType[kind], value, line_num, token_column))
 
                 current_column = match.end()
 
-            # Her satırın sonunda bir NEWLINE token'ı ekle, sadece boş veya yorum satırı değilse
-            # VEYA, her satırın sonunda ekle, parser'ın yorumları atlamasına izin ver.
-            # Python'da yorum satırları da bir NEWLINE ile biter ve lexer yorumu token'laştırdıktan sonra
-            # satır sonu da bir NEWLINE token'ı olarak üretilmelidir.
-            tokens.append(Token(TokenType.NEWLINE, '\n', original_line_num, len(line.rstrip('\n'))))
-
-            line_num += 1  # Bir sonraki satıra geç
+            # Her kod satırının sonunda bir NEWLINE token'ı ekle
+            tokens.append(Token(TokenType.NEWLINE, '\n', line_num, len(line.rstrip('\n'))))
+            line_num += 1
 
         # Dosyanın sonunda kalan tüm açık girintileri kapat
         while indent_stack[-1] > 0:
-            tokens.append(Token(TokenType.DEDENT, '', line_num - 1, 0))  # Son satırda DEDENT
+            tokens.append(Token(TokenType.DEDENT, '', line_num - 1, 0))
             indent_stack.pop()
 
-        tokens.append(Token(TokenType.EOF, '', line_num - 1, 0))  # EOF'un doğru satırda olduğundan emin olalım
+        # En sona EOF token'ı ekle
+        tokens.append(Token(TokenType.EOF, '', line_num - 1, 0))
         return tokens
 
 
