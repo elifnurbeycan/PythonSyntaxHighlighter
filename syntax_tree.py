@@ -1,5 +1,15 @@
+# syntax_tree.py
 class Node:
-    pass
+    def __repr__(self):
+        return f"{self.__class__.__name__}"
+
+
+class ProgramNode(Node):
+    def __init__(self, statements):
+        self.statements = statements
+
+    def __repr__(self):
+        return f"ProgramNode(statements={self.statements})"
 
 
 class AssignmentNode(Node):
@@ -8,25 +18,25 @@ class AssignmentNode(Node):
         self.expression = expression
 
     def __repr__(self):
-        return f"(assign {self.identifier} = {self.expression})"
+        return f"(Assign {self.identifier} = {self.expression})"
 
 
-class PrintNode(Node):
+class ExpressionStatementNode(Node):
     def __init__(self, expression):
         self.expression = expression
 
     def __repr__(self):
-        return f"(print {self.expression})"
-
+        return f"(ExprStmt {self.expression})"
 
 class IfNode(Node):
     def __init__(self, condition, body, else_body=None):
         self.condition = condition
-        self.body = body          # Girintili blok
-        self.else_body = else_body or []  # Else bloğu (opsiyonel)
+        self.body = body  # Liste
+        self.else_body = else_body or [] # Liste (elif kaldırıldı)
 
     def __repr__(self):
-        return f"IfNode(condition={self.condition}, body={self.body}, else={self.else_body})"
+        else_str = f" else={self.else_body}" if self.else_body else ""
+        return f"IfNode(condition={self.condition}, body={self.body}{else_str})"
 
 
 class WhileNode(Node):
@@ -35,8 +45,35 @@ class WhileNode(Node):
         self.body = body
 
     def __repr__(self):
-        return f"(while {self.condition} do {self.body})"
+        return f"WhileNode(condition={self.condition}, body={self.body})"
 
+# ForNode kaldırıldı
+
+class FunctionDefNode(Node):
+    def __init__(self, name, params, body):
+        self.name = name
+        self.params = params
+        self.body = body
+
+    def __repr__(self):
+        return f"FunctionDefNode(name={self.name}, params={self.params}, body={self.body})"
+
+
+class ReturnNode(Node):
+    def __init__(self, expression=None):
+        self.expression = expression
+
+    def __repr__(self):
+        return f"ReturnNode({self.expression})"
+
+
+class CallNode(Node):
+    def __init__(self, func_name, arguments):
+        self.func_name = func_name
+        self.arguments = arguments
+
+    def __repr__(self):
+        return f"CallNode(func={self.func_name}, args={self.arguments})"
 
 class BinaryOpNode(Node):
     def __init__(self, left, operator, right):
@@ -79,3 +116,19 @@ class VariableNode(Node):
 
     def __repr__(self):
         return self.name
+
+class BooleanNode(Node):
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return str(self.value)
+
+class NoneNode(Node):
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "None"
+
+# PassNode, BreakNode, ContinueNode kaldırıldı
