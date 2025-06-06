@@ -86,7 +86,11 @@ Projeyle ilgili tüm teknik bilgiler ve kararlar aşağıdaki makalede açıklan
 
 Uygulamanın çalışma prensibini ve özelliklerini anlatan video:
 
-▶️ [Tanıtım Videosu - Bağlantı eklenecek](#)
+## 📹 Tanıtım Videosu
+
+Uygulamanın nasıl çalıştığını gösteren tanıtım videosuna aşağıdan ulaşabilirsiniz:
+
+▶️ [Tanıtım Videosu](https://youtu.be/ICM6kak8eOc)
 
 ## 📦 Kurulum ve Kullanım
 
