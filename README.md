@@ -70,9 +70,9 @@ Proje kapsamında hiçbir hazır vurgulama (highlighting) kütüphanesi kullanı
 
 ## 📄 Dokümantasyon
 
-Projeyle ilgili tüm teknik bilgiler ve kararlar aşağıdaki makalede açıklanmıştır:
+Bu proje kapsamında geliştirme süreci, teknik detaylar, dosya yapısı ve analiz mantığıyla ilgili tüm bilgiler aşağıdaki Medium makalesinde ayrıntılı şekilde açıklanmıştır:
 
-📝 [https://medium.com/@elif.bycn35/ger%C3%A7ek-zamanl%C4%B1-s%C3%B6zdizimi-vurgulay%C4%B1c%C4%B1-projesi-tasar%C4%B1m-ve-uygulama-ccd0be769c66](#)
+🔗 [Gerçek Zamanlı Sözdizimi Vurgulayıcı Projesi: Tasarım ve Uygulama](https://medium.com/@elif.bycn35/ger%C3%A7ek-zamanl%C4%B1-s%C3%B6zdizimi-vurgulay%C4%B1c%C4%B1-projesi-tasar%C4%B1m-ve-uygulama-ccd0be769c66)
 
 ### İçerik
 
