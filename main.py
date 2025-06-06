@@ -72,28 +72,33 @@ class SyntaxHighlighterGUI:
         self.line_numbers.config(state='disabled')
 
     def define_tags(self):
-        # Genişletilmiş renk tag'leri listesi, highlight_syntax ile tam uyumlu
-        self.text_area.tag_config("keyword", foreground="#0000FF")  # Mavi (if, else, while, def, return için)
-        self.text_area.tag_config("operator", foreground="#FF8C00")  # Turuncu (+, -, *, /, =, ==, >, < vb.)
-        self.text_area.tag_config("number", foreground="#8B0000")  # Koyu Kırmızı (Sayılar için)
-        self.text_area.tag_config("string", foreground="#008000")  # Yeşil (Metinler için)
-        self.text_area.tag_config("comment", foreground="#808080",
-                                  font=("Consolas", 10, "italic"))  # Gri ve İtalik (# yorumlar için)
+    # Sözdizimi vurgulama için renkleri tanımlıyoruz
+    self.text_area.tag_config("keyword", foreground="#0000cc")  # anahtar kelimeler (if, else, def, vs.)
+    self.text_area.tag_config("operator", foreground="#cc5500")  # +, -, = gibi operatörler
+    self.text_area.tag_config("number", foreground="#aa0000")    # sayılar
+    self.text_area.tag_config("string", foreground="#007700")    # metinler ("hello")
+    self.text_area.tag_config("comment", foreground="#666666", font=("Consolas", 10, "italic"))  # yorum satırları
 
-        self.text_area.tag_config("identifier", foreground="#000000")  # Siyah (Varsayılan tanımlayıcılar için)
-        self.text_area.tag_config("variable", foreground="#333333")  # Koyu Gri (Değişken isimleri için)
-        self.text_area.tag_config("function_call", foreground="#8A2BE2")  # Mor (print gibi fonksiyon çağrıları için)
-        self.text_area.tag_config("boolean", foreground="#FF00FF")  # Magenta (True, False, None için)
-        self.text_area.tag_config("lparen", foreground="#8B008B")  # Koyu Mor (( ) için)
-        self.text_area.tag_config("rparen", foreground="#8B008B")  # Koyu Mor (( ) için)
-        self.text_area.tag_config("colon", foreground="#8B008B")  # Koyu Mor (: için)
-        self.text_area.tag_config("comma", foreground="#8B008B")  # Koyu Mor (, için)
-        self.text_area.tag_config("mismatch", foreground="red",
-                                  background="yellow")  # Tanınmayan karakterler için (uyarı)
+    # Tanımlayıcılar ve fonksiyon isimleri
+    self.text_area.tag_config("identifier", foreground="#000000")  # değişken ve fonksiyon adları
+    self.text_area.tag_config("variable", foreground="#333333")    # ekstra ayrım (şimdilik aynı gibi)
+    self.text_area.tag_config("function_call", foreground="#7B68EE")  # fonksiyon çağrıları (örneğin: print())
 
-        # Hata işaretleyici tag'leri
-        self.text_area.tag_config("error_line", background="#FFCCCC", underline=True)
-        self.text_area.tag_config("error_char", background="#FF9999", foreground="red")
+    # Diğer sabitler (True, False, None)
+    self.text_area.tag_config("boolean", foreground="#990099")
+
+    # Parantez, virgül, iki nokta vb.
+    self.text_area.tag_config("lparen", foreground="#444444")
+    self.text_area.tag_config("rparen", foreground="#444444")
+    self.text_area.tag_config("colon", foreground="#444444")
+    self.text_area.tag_config("comma", foreground="#444444")
+
+    # Tanınmayan karakterler
+    self.text_area.tag_config("mismatch", foreground="red", background="yellow")
+
+    # Satırda hata varsa arka planı hafif kırmızı yap
+    self.text_area.tag_config("error_line", background="#ffe6e6", underline=True)
+    self.text_area.tag_config("error_char", background="#ffcccc", foreground="red")
 
     def on_text_modified(self, event=None):
         if self.text_area.edit_modified():
