@@ -85,12 +85,13 @@ class Parser:
 
     def parse_expression(self):
         # Basitlik adına, sadece karşılaştırma ve aritmetik işlemleri destekleyelim
-        return self.parse_comparison()
+        return self.parse_or_expression()
 
     def parse_comparison(self):
-        expr = self.parse_term()
-        # Operatörler listesi (string değerleriyle)
+        expr = self.parse_term()  # Önceki mantıkla aynı: terimleri parse et
         ops = ['==', '!=', '<', '>', '<=', '>=']
+        # Bu döngü hala doğru. Mantıksal operatörler daha düşük öncelikli olduğu için
+        # parse_term (ve dolayısıyla parse_factor, parse_unary, parse_primary) önce çalışır.
         while self.check(TokenType.OPERATOR) and self.peek().value in ops:
             operator_token = self.advance()
             right = self.parse_term()
@@ -179,12 +180,17 @@ class Parser:
     # --- Blok ve Yapısal Metodlar ---
     def parse_block(self):
         statements = []
-        self.skip_newlines()
-        self.consume(TokenType.INDENT, None)
+        # Artık burada INDENT ve DEDENT tüketmiyoruz!
+        # Bunlar parse_if_statement, parse_while_statement gibi metotlarda ele alınacak.
 
+        self.skip_newlines()  # Önceki NEWLINE'ları atla
+
+        # DEDENT veya EOF gelene kadar ifadeleri parse et
         while not (self.check(TokenType.DEDENT) or self.peek().type == TokenType.EOF):
+            # Eğer boşluk veya yorum varsa atla (bu zaten iyi bir uygulama)
             self.skip_whitespace_and_comments()
 
+            # Döngünün başında tekrar kontrol et
             if self.check(TokenType.DEDENT) or self.peek().type == TokenType.EOF:
                 break
 
@@ -192,27 +198,44 @@ class Parser:
             if stmt:
                 statements.append(stmt)
 
+            # İfade sonunda NEWLINE'ları atla
             self.skip_newlines()
 
-        self.consume(TokenType.DEDENT, None)
         return statements
 
     def parse_if_statement(self):
-        self.consume_keyword(TokenType.KEYWORD_IF)
+        self.consume(TokenType.KEYWORD_IF)  # 'if' tüket
         condition = self.parse_expression()
-        self.consume(TokenType.COLON, ':')  # Burada ':' token'ını bekliyoruz
-        self.skip_newlines()
+        self.consume(TokenType.COLON)  # ':' tüket
+        self.consume(TokenType.NEWLINE)  # '\n' tüket
 
-        body = self.parse_block()
+        self.consume(TokenType.INDENT)  # <-- BURADA INDENT tüket
+        body = self.parse_block()  # Bloğu parse et
+        self.consume(TokenType.DEDENT)  # <-- BURADA DEDENT tüket
 
-        else_body = []
-        if self.check_keyword(TokenType.KEYWORD_ELSE):
-            self.advance()  # ELSE keyword'ünü tüket
-            self.consume(TokenType.COLON, ':')  # ELSE'den sonraki ':' token'ını bekliyoruz
-            self.skip_newlines()
+        elif_clauses = []
+        while self.check(TokenType.KEYWORD_ELIF):  # 'elif' tokenını kontrol et
+            self.consume(TokenType.KEYWORD_ELIF)  # 'elif' tüket
+            elif_condition = self.parse_expression()
+            self.consume(TokenType.COLON)  # ':' tüket
+            self.consume(TokenType.NEWLINE)  # '\n' tüket
+
+            self.consume(TokenType.INDENT)  # <-- HER ELIF BLOĞU İÇİN INDENT tüket
+            elif_body = self.parse_block()
+            self.consume(TokenType.DEDENT)  # <-- HER ELIF BLOĞU İÇİN DEDENT tüket
+            elif_clauses.append((elif_condition, elif_body))  # Veya IfNode'daki yapınıza göre ekleyin
+
+        else_body = None
+        if self.check(TokenType.KEYWORD_ELSE):  # 'else' tokenını kontrol et
+            self.consume(TokenType.KEYWORD_ELSE)  # 'else' tüket
+            self.consume(TokenType.COLON)  # ':' tüket
+            self.consume(TokenType.NEWLINE)  # '\n' tüket
+
+            self.consume(TokenType.INDENT)  # <-- ELSE BLOĞU İÇİN INDENT tüket
             else_body = self.parse_block()
+            self.consume(TokenType.DEDENT)  # <-- ELSE BLOĞU İÇİN DEDENT tüket
 
-        return IfNode(condition, body, else_body)
+        return IfNode(condition, body, elif_clauses, else_body)  # IfNode'unuza elif_clauses'ı da geçirin
 
     def parse_while_statement(self):
         self.consume_keyword(TokenType.KEYWORD_WHILE)
@@ -221,6 +244,30 @@ class Parser:
         self.consume(TokenType.NEWLINE)
         body = self.parse_block()
         return WhileNode(condition, body)
+
+    def parse_or_expression(self):
+        left = self.parse_and_expression()  # Daha yüksek öncelikli 'and' ifadesini parse et
+        while self.check(TokenType.KEYWORD_OR):
+            op_token = self.consume(TokenType.KEYWORD_OR)
+            right = self.parse_and_expression()
+            left = BinaryOpNode(left, op_token.value, right)  # operator olarak token.value kullanıyoruz
+        return left
+
+    def parse_and_expression(self):
+        left = self.parse_not_expression()  # Daha yüksek öncelikli 'not' ifadesini parse et
+        while self.check(TokenType.KEYWORD_AND):
+            op_token = self.consume(TokenType.KEYWORD_AND)
+            right = self.parse_not_expression()
+            left = BinaryOpNode(left, op_token.value, right)
+        return left
+
+    def parse_not_expression(self):
+        if self.check(TokenType.KEYWORD_NOT):
+            op_token = self.consume(TokenType.KEYWORD_NOT)
+            operand = self.parse_not_expression()  # not'ın sağındaki ifadeyi parse et (recursive)
+            return UnaryOpNode(op_token.value, operand)  # operator olarak token.value kullanıyoruz
+        else:
+            return self.parse_comparison()  # Eğer 'not' yoksa, karşılaştırma ifadesini parse et
 
     def parse_function_def(self):
         self.consume_keyword(TokenType.KEYWORD_DEF)
