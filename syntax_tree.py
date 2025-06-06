@@ -239,4 +239,4 @@ class NoneNode(ASTNode):  # ASTNode'dan miras alıyor
 
     def _str_recursive(self, level, indent_char='  '):
         prefix = indent_char * level
-        return f"{prefix}• Boş Değer (NoneNode): None\n"
+        return f"{prefix}• Boş Değer (NoneNode): None\n" 
