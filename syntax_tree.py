@@ -28,16 +28,25 @@ class ExpressionStatementNode(Node):
     def __repr__(self):
         return f"(ExprStmt {self.expression})"
 
-class IfNode(Node):
-    def __init__(self, condition, body, else_body=None):
+class ASTNode:
+    pass
+
+class IfNode(ASTNode):
+    def __init__(self, condition, body, elif_clauses=None, else_body=None): # <-- elif_clauses eklendi
         self.condition = condition
-        self.body = body  # Liste
-        self.else_body = else_body or [] # Liste (elif kaldırıldı)
+        self.body = body # List of statements
+        self.elif_clauses = elif_clauses if elif_clauses is not None else [] # list of (condition, body) tuples or ElifClauseNode objects
+        self.else_body = else_body # List of statements or None
 
     def __repr__(self):
-        else_str = f" else={self.else_body}" if self.else_body else ""
-        return f"IfNode(condition={self.condition}, body={self.body}{else_str})"
-
+        # Temsili biraz daha karmaşıklaşabilir
+        if_str = f"IfNode(Condition={self.condition}, Body={self.body}"
+        if self.elif_clauses:
+            if_str += f", ElifClauses={self.elif_clauses}"
+        if self.else_body:
+            if_str += f", ElseBody={self.else_body}"
+        if_str += ")"
+        return if_str
 
 class WhileNode(Node):
     def __init__(self, condition, body):
