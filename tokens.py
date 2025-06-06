@@ -5,6 +5,7 @@ class TokenType(Enum):
     # Anahtar Kelimeler
     KEYWORD_IF = 'IF'
     KEYWORD_ELSE = 'ELSE'
+    KEYWORD_ELIF = 'ELIF'
     KEYWORD_WHILE = 'WHILE'
     KEYWORD_DEF = 'DEF'
     KEYWORD_RETURN = 'RETURN'
@@ -27,6 +28,11 @@ class TokenType(Enum):
     MULTIPLY = '*'
     DIVIDE = '/'
     MODULO = '%'
+
+    # Mantıksal Operatörler <-- YENİ EKLENDİ
+    KEYWORD_AND = 'AND'
+    KEYWORD_OR = 'OR'
+    KEYWORD_NOT = 'NOT'
 
     # Ayraclar / Ayraçlar
     LPAREN = '('
