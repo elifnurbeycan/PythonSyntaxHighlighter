@@ -51,13 +51,13 @@ Proje kapsamında hiçbir hazır vurgulama (highlighting) kütüphanesi kullanı
 
 ### Başarılı Kod Vurgulaması
 
-![Başarılı Kod Örneği](images/kodcıktı1.png)
+![Başarılı Kod Örneği](kodcıktı1.png)
 
 ---
 
 ### Hata Yakalama Örneği
 
-![Hata Yakalama Örneği](images/kodcıktıhata1.png)
+![Hata Yakalama Örneği](kodcıktıhata1.png)
 
 ---
 
