@@ -1,93 +1,91 @@
-# Real-Time Grammar-Based Syntax Highlighter with GUI
+# Gerçek Zamanlı Sözdizimi Vurgulayıcı (Syntax Highlighter) – GUI Uygulaması
 
-## 📌 Overview
+## 📌 Genel Bakış
 
-This project is a **real-time syntax highlighter** with a **graphical user interface (GUI)**, developed as part of a Programming Languages course. It performs **lexical analysis** and **syntax parsing** based on a formally defined grammar, without using any external syntax highlighting libraries.
+Bu proje, bir **programlama dili** için gerçek zamanlı çalışan, **grafiksel kullanıcı arayüzü (GUI)** içeren bir **sözdizimi vurgulayıcı** uygulamasıdır. Geliştirilen sistem, **biçimsel dil kurallarına (gramer)** dayalı olarak **leksik (lexical) ve sözdizimsel (syntax) analiz** gerçekleştirir.
 
-The system highlights **at least 5 distinct token types in real-time**, demonstrating both **lexical** and **syntax analysis** in an interactive environment. It also includes a custom-built **parser** and **lexer**, developed fully from scratch.
+Proje kapsamında hiçbir hazır vurgulama (highlighting) kütüphanesi kullanılmamış, tüm analiz araçları sıfırdan geliştirilmiştir.
 
-## 🚀 Features
+## 🚀 Özellikler
 
-- ✅ Real-time syntax highlighting with live GUI updates
-- ✅ At least 5 token types highlighted with distinct styles
-- ✅ Lexer built using a state diagram & program implementation
-- ✅ Top-down parser (pre-order traversal of parse tree)
-- ✅ Formal grammar definition and custom tokenization
-- ✅ Publicly shared demo video and technical article
+- ✅ Gerçek zamanlı sözdizimi vurgulama
+- ✅ En az 5 farklı türde token (birim) vurgulaması
+- ✅ Durum diyagramına dayalı leksik analiz
+- ✅ Top-down (yukarıdan aşağı) sözdizim analiz yöntemi
+- ✅ Kullanıcı dostu grafik arayüz (Tkinter)
+- ✅ Kamuya açık tanıtım videosu ve teknik makale
 
-## 🔧 Technologies Used
+## 🔧 Kullanılan Teknolojiler
 
-- **Language:** Python
-- **GUI Framework:** Tkinter
-- **Lexer Method:** State Diagram & Programmatic Implementation
-- **Parser Type:** Top-Down Recursive Descent Parser
-- **Token Types:** Keywords, Identifiers, Operators, Numbers, Symbols
+- **Programlama Dili:** Python
+- **Arayüz Kütüphanesi:** Tkinter
+- **Lexical Analyzer:** Durum diyagramına dayalı programatik yaklaşım
+- **Parser Türü:** Top-Down (Recursive Descent)
+- **Token Türleri:** Anahtar kelime, tanımlayıcı, işlemci, sayı, sembol
 
-## 🧠 Syntax Analysis
+## 🧠 Sözdizimi Analizi
 
-### Lexical Analyzer
+### Leksik Analiz (Lexical Analysis)
 
-- Built using a state diagram and implemented in Python.
-- Tokenizes input based on regular expressions for:
-  - **Keywords** (e.g., `if`, `while`, `return`)
-  - **Identifiers** (variable/function names)
-  - **Operators** (`+`, `-`, `=`, etc.)
-  - **Literals** (numbers)
-  - **Symbols** (`{`, `}`, `(`, `)`, etc.)
+- Giriş metni, belirlenen kurallara göre parçalara (token) ayrılır.
+- Kullanılan token türleri:
+  - **Anahtar kelimeler:** `if`, `while`, `return` gibi
+  - **Tanımlayıcılar:** değişken ve fonksiyon adları
+  - **İşlemciler:** `+`, `-`, `=`, vb.
+  - **Sayılar:** sayısal değerler
+  - **Semboller:** `{`, `}`, `(`, `)`, vb.
 
-### Syntax Analyzer
+### Sözdizimsel Analiz (Syntax Analysis)
 
-- Implements a **Top-Down Parser** using a **recursive descent strategy**.
-- Parses tokens based on a **context-free grammar** defined for the target language.
-- Detects and reports syntax errors live in the GUI.
+- **Top-Down (yukarıdan aşağı)** yaklaşımıyla, bir **Recursive Descent Parser** kullanılır.
+- Tanımlı bağlamdan bağımsız gramer kurallarına göre analiz yapılır.
+- Hatalı sözdizimi, gerçek zamanlı olarak kullanıcıya bildirilir.
 
-## 🎨 Highlighting Scheme
+## 🎨 Vurgulama Sistemi
 
-| Token Type   | Color         |
+| Token Türü   | Renk          |
 |--------------|---------------|
-| Keyword      | Blue          |
-| Identifier   | Black         |
-| Number       | Dark Orange   |
-| Operator     | Red           |
-| Symbol       | Gray          |
+| Anahtar Kelime | Mavi         |
+| Tanımlayıcı    | Siyah        |
+| Sayı           | Turuncu      |
+| İşlemci        | Kırmızı      |
+| Sembol         | Gri          |
 
-## 🖼 GUI Implementation
+## 🖼 Arayüz (GUI)
 
-The GUI is developed using **Tkinter** and supports:
+Uygulama, Python’un Tkinter kütüphanesi ile geliştirilmiştir. Özellikleri:
 
-- Real-time highlighting as the user types
-- Color-coded token display
-- Error highlighting for invalid syntax
-- AST (Abstract Syntax Tree) display panel (optional enhancement)
+- Kullanıcı yazdıkça gerçek zamanlı vurgulama
+- Her token türü için farklı renk
+- Hatalı sözdiziminde uyarı
+- (Opsiyonel) Sözdizimi ağacı (AST) gösterimi
 
-## 📄 Documentation
+## 📄 Dokümantasyon
 
-All major decisions and implementations are described in the [project article](#link-to-article).
+Projeyle ilgili tüm teknik bilgiler ve kararlar aşağıdaki makalede açıklanmıştır:
 
-Documentation includes:
+📝 [Projeye ait yazı - Bağlantı eklenecek](#)
 
-- Grammar definition and design decisions
-- Lexical analyzer architecture
-- Parser methodology and grammar rules
-- Highlighting logic and color scheme
-- GUI structure and user experience goals
+### İçerik:
 
-## 📹 Demo Video
+- Gramer tanımı ve tercih nedenleri
+- Leksik analiz süreci
+- Parser yapısı ve kurallar
+- Vurgulama sistemi mantığı
+- Arayüz tasarımı ve işlevselliği
 
-Watch the project demo on YouTube:  
-👉 [Click to Watch Demo](#link-to-video)
+## 📹 Tanıtım Videosu
 
-## 📚 Article
+Uygulamanın nasıl çalıştığını gösteren tanıtım videosuna aşağıdan ulaşabilirsiniz:
 
-Read the full write-up covering design choices and implementation:  
-📝 [Read the Article](#link-to-article)
+▶️ [Tanıtım Videosu - Bağlantı eklenecek](#)
 
-## 📦 Installation & Usage
+## 📦 Kurulum ve Kullanım
 
 ```bash
-# Clone the repository
-git clone https://github.com/elifnurbeycan/PythonSyntaxHighlighter.git
-cd realtime-syntax-highlighter
+# Projeyi klonla
+git clone https://github.com/elifnurbeycanz/PythonSyntaxHighlighter.git
+cd PythonSyntaxHighlighter
 
-# Run the application
+# Uygulamayı çalıştır
 python main.py
