@@ -1,51 +1,61 @@
 # tokens.py
 from enum import Enum
 
-
 class TokenType(Enum):
-    # Temel Tipler
-    IDENTIFIER = 'IDENTIFIER'
-    NUMBER = 'NUMBER'
-    STRING = 'STRING'
-
-    # Operatörler (daha az detaylı, genel OPERATOR altında toplayabiliriz)
-    OPERATOR = 'OPERATOR'  # Genel operatörler için
-
-    # Noktalama İşaretleri
-    LPAREN = 'LPAREN'  # (
-    RPAREN = 'RPAREN'  # )
-    COLON = 'COLON'  # :
-    COMMA = 'COMMA'  # ,
-
-    # Anahtar Kelimeler (Sadece temel Python anahtar kelimeleri)
+    # Anahtar Kelimeler
     KEYWORD_IF = 'IF'
     KEYWORD_ELSE = 'ELSE'
-    # KEYWORD_ELIF kaldırıldı
     KEYWORD_WHILE = 'WHILE'
-    # KEYWORD_FOR kaldırıldı
     KEYWORD_DEF = 'DEF'
     KEYWORD_RETURN = 'RETURN'
     KEYWORD_TRUE = 'TRUE'
     KEYWORD_FALSE = 'FALSE'
     KEYWORD_NONE = 'NONE'
-    # KEYWORD_AND, KEYWORD_OR, KEYWORD_NOT, KEYWORD_IN kaldırıldı
-    KEYWORD_PRINT = 'PRINT'  # Print fonksiyonu için keyword olarak bırakalım
+    KEYWORD_PRINT = 'PRINT' # 'print' için özel bir anahtar kelime
 
-    # Yapısal Tokenler
+    # Operatörler
+    OPERATOR = 'OPERATOR' # Tüm operatörler için tek tip
+    EQ = '=='
+    NE = '!='
+    LT = '<'
+    GT = '>'
+    LE = '<='
+    GE = '>='
+    ASSIGN = '='
+    PLUS = '+'
+    MINUS = '-'
+    MULTIPLY = '*'
+    DIVIDE = '/'
+    MODULO = '%'
+
+    # Ayraclar / Ayraçlar
+    LPAREN = '('
+    RPAREN = ')'
+    COLON = ':'
+    COMMA = ','
+
+    # Literaller
+    IDENTIFIER = 'IDENTIFIER'
+    NUMBER = 'NUMBER'
+    STRING = 'STRING'
+    BOOLEAN = 'BOOLEAN' # True/False için genel bir boolean tipi (isteğe bağlı, KEYWORD_TRUE/FALSE zaten var)
+
+    # Özel Token Tipleri
+    COMMENT = 'COMMENT'
+    WHITESPACE = 'WHITESPACE'
     NEWLINE = 'NEWLINE'
     INDENT = 'INDENT'
     DEDENT = 'DEDENT'
-    COMMENT = 'COMMENT'
-    EOF = 'EOF'
-    MISMATCH = 'MISMATCH'  # Tanımlanamayan karakterler için
-
+    EOF = 'EOF' # End Of File
+    MISMATCH = 'MISMATCH' # Tanımlanamayan karakterler için
 
 class Token:
-    def __init__(self, type_, value, line=0, column=0):
-        self.type = type_
+    def __init__(self, type, value, line=None, column=None):
+        self.type = type
         self.value = value
         self.line = line
         self.column = column
 
     def __repr__(self):
-        return f"Token({self.type.name}, {self.value!r}, line={self.line}, col={self.column})"
+        # Sütun bilgisi de eklenerek daha detaylı bir temsil
+        return f"Token(Type:{self.type.name}, Value:'{self.value}', Line:{self.line}, Col:{self.column})"
