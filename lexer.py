@@ -6,21 +6,55 @@ from tokens import Token, TokenType
 class Lexer:
     def __init__(self):
         self.token_specs = [
-            # Operatörler: Önce uzun olanlar gelmeli (örneğin '==' önce '=' den)
-            ('OPERATOR', r'==|!=|<=|>=|<|>|=|\+|-|\*|/|%'),
+            ('WHITESPACE', r'\s+'),
+            ('COMMENT', r'#.*'),
+            ('STRING', r'"[^"]*"|\'[^\']*\''),  # Çift veya tek tırnaklı dizeler
+            ('NUMBER', r'\b\d+(\.\d*)?|\.\d+\b'),  # Tam sayılar veya ondalıklı sayılar
+
+            # Operatörler: Önce uzun olanlar gelmeli, sonra kısa olanlar
+            ('EQ', r'=='),  # Eşittir
+            ('NE', r'!='),  # Eşit değildir
+            ('LE', r'<='),  # Küçük eşit
+            ('GE', r'>='),  # Büyük eşit
+            ('LT', r'<'),  # Küçük
+            ('GT', r'>'),  # Büyük
+
+            ('PLUS', r'\+'),  # Artı
+            ('MINUS', r'-'),  # Eksi
+            ('MULTIPLY', r'\*'),  # Çarpı
+            ('DIVIDE', r'/'),  # Bölü
+            ('MODULO', r'%'),  # Modulo
+
+            ('ASSIGN', r'='),  # Atama operatörü
+
             ('LPAREN', r'\('),
             ('RPAREN', r'\)'),
             ('COLON', r':'),
             ('COMMA', r','),
 
-            ('STRING', r'(\"[^\"]*\"|\'[^\']*\')'),  # Tırnak içinde her şeyi yakala
-            ('COMMENT', r'#.*'),
-            ('NUMBER', r'\b\d+(\.\d*)?|\.\d+\b'),  # 123, 123.45, .5 gibi
+            # Anahtar kelimeler (IDENTIFIER'dan önce gelmeli)
+            ('KEYWORD_IF', r'\bif\b'),
+            ('KEYWORD_ELIF', r'\belif\b'),
+            ('KEYWORD_ELSE', r'\belse\b'),
+            ('KEYWORD_WHILE', r'\bwhile\b'),
+            ('KEYWORD_DEF', r'\bdef\b'),
+            ('KEYWORD_RETURN', r'\breturn\b'),
+            ('KEYWORD_TRUE', r'\bTrue\b'),
+            ('KEYWORD_FALSE', r'\bFalse\b'),
+            ('KEYWORD_NONE', r'\bNone\b'),
+            ('KEYWORD_AND', r'\band\b'),
+            ('KEYWORD_OR', r'\bor\b'),
+            ('KEYWORD_NOT', r'\bnot\b'),
+            ('KEYWORD_PRINT', r'\bprint\b'),
+            ('KEYWORD_PASS', r'\bpass\b'),
+            ('KEYWORD_IMPORT', r'\bimport\b'),  # Eklemeyi unutmayın
+            ('KEYWORD_FROM', r'\bfrom\b'),  # Eklemeyi unutmayın
+
             ('IDENTIFIER', r'[a-zA-Z_][a-zA-Z0-9_]*'),  # Anahtar kelimelerden sonra gelmeli
 
-            ('WHITESPACE', r'[ \t]+'),  # Boşlukları atla, NEWLINE'lar ayrılacak
-            ('NEWLINE', r'\n'),  # Yeni satır karakteri
-            ('MISMATCH', r'.'),  # Kalan her şey
+            ('NEWLINE', r'\n'),  # Yeni satır tokenı
+
+            ('MISMATCH', r'.')  # Tanınmayan karakterler için (en sonda)
         ]
 
         self.keywords = {
