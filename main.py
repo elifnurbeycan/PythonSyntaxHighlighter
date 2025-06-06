@@ -145,9 +145,10 @@ class SyntaxHighlighterGUI:
                 end = f"{token.line}.{token.column + len(str(token.value))}"
 
                 # Token tipine göre doğru tag'i belirle ve uygula
-                if token.type in [TokenType.KEYWORD_IF, TokenType.KEYWORD_ELSE,
-                                  TokenType.KEYWORD_WHILE, TokenType.KEYWORD_DEF,
-                                  TokenType.KEYWORD_RETURN]:
+                if token.type in [TokenType.KEYWORD_IF, TokenType.KEYWORD_ELIF,
+                                  TokenType.KEYWORD_ELSE,TokenType.KEYWORD_WHILE,
+                                  TokenType.KEYWORD_DEF,TokenType.KEYWORD_RETURN,
+                                  TokenType.KEYWORD_AND, TokenType.KEYWORD_OR, TokenType.KEYWORD_NOT]:
                     self.text_area.tag_add("keyword", start, end)
                 elif token.type == TokenType.KEYWORD_PRINT:
                     self.text_area.tag_add("function_call", start, end)
@@ -293,7 +294,7 @@ class SyntaxHighlighterGUI:
         elif color == "green" or not message:
             # Eğer önceki bir 'after' zamanlaması varsa onu iptal et (hatadan yeşile geçerse).
             if hasattr(self, '_error_clear_job') and self._error_clear_job is not None:
-                self.master.after_cancel(self._error_error_clear_job)
+                self.master.after_cancel(self._error_clear_job)
 
             # Yeşil mesajlar için 2 saniye sonra temizle
             self._error_clear_job = self.master.after(2000, lambda: self.error_label.config(text="", bg="lightgreen"))
