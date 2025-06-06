@@ -2,15 +2,30 @@
 from tokens import TokenType, Token
 from syntax_tree import *
 
-
 class ParserError(Exception):
     pass
-
 
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.current = 0
+        self.lookahead = None  # Sonraki anlamlı tokenı tutacak
+        self._prime_lookahead()  # lookahead'i başlat
+
+    def _prime_lookahead(self):
+        # self.current'ı boşluk ve yorum tokenlarının ötesine ilerlet
+        while self.current < len(self.tokens) and \
+                (self.tokens[self.current].type == TokenType.WHITESPACE or \
+                 self.tokens[self.current].type == TokenType.COMMENT):
+            self.current += 1
+
+        # Eğer token listesinin sonuna gelinmediyse lookahead'i ayarla
+        if self.current < len(self.tokens):
+            self.lookahead = self.tokens[self.current]
+        else:
+            # Listenin sonundaysak, bir EOF (End Of File) tokenı döndür
+            # Satır ve sütun bilgisini de ekleyebiliriz, ancak -1, -1 yeterli olur
+            self.lookahead = Token(TokenType.EOF, '', -1, -1)
 
     def parse(self):
         statements = []
@@ -61,8 +76,7 @@ class Parser:
             pass
 
     def parse_statement(self):
-        token = self.peek()
-
+        # --- Diğer Statement Türleri (if, while, def, return vb.) ---
         if self.check_keyword(TokenType.KEYWORD_IF):
             return self.parse_if_statement()
         elif self.check_keyword(TokenType.KEYWORD_WHILE):
@@ -71,28 +85,71 @@ class Parser:
             return self.parse_function_def()
         elif self.check_keyword(TokenType.KEYWORD_RETURN):
             return self.parse_return_statement()
+        elif self.check_keyword(TokenType.KEYWORD_IMPORT):
+            return self.parse_import_statement()
+        elif self.check_keyword(TokenType.KEYWORD_FROM):
+            return self.parse_from_import_statement()
+        elif self.check_keyword(TokenType.KEYWORD_PASS):
+            # Basit bir pass statement'ı
+            self.advance()  # 'pass' keyword'ünü tüket
+            return ExpressionStatementNode(NoneNode())  # PassNode() da olabilir
 
-        # Atama veya Expression Statement
+        # --- Atama İfadesi veya Normal İfade İfadesi ---
+        # Parser'ın mevcut durumunu (ham token indeksi ve lookahead tokenı) kaydet.
+        # Bu, ileriye bakma işlemi için geçici olarak durumu değiştirebilmemizi sağlar.
+        original_current_raw_index = self.current
+        original_lookahead_token = self.lookahead
+
+        # Eğer mevcut token bir IDENTIFIER ise, bu bir atamanın başlangıcı olabilir.
+        if self.check(TokenType.IDENTIFIER):
+            # Geçici olarak IDENTIFIER'ı tüket ve lookahead'i bir sonraki anlamlı tokene getir.
+            # self.advance() çağrısı, self.current'ı ilerletir ve _prime_lookahead'i çağırarak self.lookahead'i günceller.
+            temp_identifier_token = self.advance()
+
+            # Şimdi, yeni lookahead tokenı (yani IDENTIFIER'dan sonraki token) bir ASSIGN mı?
+            if self.check(TokenType.ASSIGN):
+                # Evet, bir atama ifadesi bulduk!
+                # Parser'ın durumunu, atama işlemini baştan doğru bir şekilde ayrıştırmak için ilk haline geri döndür.
+                self.current = original_current_raw_index
+                self.lookahead = original_lookahead_token
+
+                # Atama deyimini ayrıştırmak için özel metodu çağır.
+                return self.parse_assignment_statement()
+            else:
+                # IDENTIFIER'dan sonra ASSIGN yoktu (örn: bir fonksiyon çağrısı, tek başına bir değişken).
+                # Parser'ın durumunu geri döndür ve bu satırı normal bir ifade deyimi olarak ayrıştırmaya devam et.
+                self.current = original_current_raw_index
+                self.lookahead = original_lookahead_token
+
+        # Eğer yukarıdaki koşullar bir atama ifadesine uymadıysa (ya IDENTIFIER ile başlamıyorsa ya da ASSIGN takip etmiyorsa),
+        # bu satır basit bir ifade deyimi olmalıdır.
         expr = self.parse_expression()
-
-        if self.match(TokenType.OPERATOR) and self.previous().value == '=':
-            if not isinstance(expr, VariableNode):
-                raise ParserError(
-                    f"Geçersiz atama hedefi. Değişken bekleniyor, ancak '{expr.__class__.__name__}' bulundu. (Satır {token.line})")
-            return AssignmentNode(expr.name, self.parse_expression())
-
         return ExpressionStatementNode(expr)
+
+    def parse_assignment_statement(self):
+        # consume metoduna ikinci parametre olarak beklenen değeri GİRMEYİN.
+        # Bu, consume metodunun TokenType.IDENTIFIER türünde herhangi bir IDENTIFIER'ı kabul etmesini sağlar.
+        identifier_token = self.consume(TokenType.IDENTIFIER)  # <-- Sadece TokenType.IDENTIFIER gönderin!
+        variable_node = VariableNode(identifier_token.value)
+
+        self.consume(TokenType.ASSIGN,
+                     "=")  # Burada '=' değeri göndermek mantıklı, çünkü ASSIGN tokenının değeri genelde hep '='dır.
+
+        expression = self.parse_expression()
+        return AssignmentNode(variable_node, expression)
 
     def parse_expression(self):
         # Basitlik adına, sadece karşılaştırma ve aritmetik işlemleri destekleyelim
         return self.parse_or_expression()
 
     def parse_comparison(self):
-        expr = self.parse_term()  # Önceki mantıkla aynı: terimleri parse et
-        ops = ['==', '!=', '<', '>', '<=', '>=']
-        # Bu döngü hala doğru. Mantıksal operatörler daha düşük öncelikli olduğu için
-        # parse_term (ve dolayısıyla parse_factor, parse_unary, parse_primary) önce çalışır.
-        while self.check(TokenType.OPERATOR) and self.peek().value in ops:
+        expr = self.parse_term()
+        # Operatörler listesi (string değerleriyle)
+        # ops = ['==', '!=', '<', '>', '<=', '>='] # Buna artık gerek yok
+
+        while self.check(TokenType.EQ) or self.check(TokenType.NE) or \
+                self.check(TokenType.LT) or self.check(TokenType.GT) or \
+                self.check(TokenType.LE) or self.check(TokenType.GE):
             operator_token = self.advance()
             right = self.parse_term()
             expr = BinaryOpNode(expr, operator_token.value, right)
@@ -100,39 +157,32 @@ class Parser:
 
     def parse_term(self):
         # Toplama ve Çıkarma
-        expr = self.parse_factor()  # İlk olarak bir faktörü ayrıştır
+        expr = self.parse_factor()
 
-        while self.check(TokenType.OPERATOR) and (self.peek().value == '+' or self.peek().value == '-'):
-            operator = self.advance().value
-            right = self.parse_factor()  # Operatörden sonra yine bir faktör beklenir
-            expr = BinaryOpNode(expr, operator, right)
+        while self.check(TokenType.PLUS) or self.check(TokenType.MINUS):
+            operator_token = self.advance()
+            right = self.parse_factor()
+            expr = BinaryOpNode(expr, operator_token.value, right)
         return expr
 
     def parse_factor(self):
-        # Çarpma ve Bölme
+        # Çarpma, Bölme ve Mod
         expr = self.parse_unary()  # İlk olarak bir unary ifadeyi ayrıştır
 
-        while self.check(TokenType.OPERATOR) and (self.peek().value == '*' or self.peek().value == '/'):
+        while self.check(TokenType.MULTIPLY) or \
+                self.check(TokenType.DIVIDE) or \
+                self.check(TokenType.MODULO):
+
             operator = self.advance().value
-
-            # BURADA KRİTİK NOKTA: Operatörden sonra bir 'ifade' beklenir.
-            # 'sayi1 + *5' durumunda, '*' operatöründen sonra doğrudan '5' gelmeli.
-            # Eğer '5' gelmezse veya '*' beklenmeyen bir konumdaysa, hata fırlatmalıyız.
-
-            # advance() sonrası birincil ifadeyi ayrıştırmaya çalış
-            right = self.parse_unary()  # Tekrar bir unary ifade bekliyoruz
-
+            right = self.parse_unary()
             expr = BinaryOpNode(expr, operator, right)
         return expr
 
     def parse_unary(self):
-        # Tekli operatörler (+, -)
-        if self.check(TokenType.OPERATOR) and (self.peek().value == '+' or self.peek().value == '-'):
+        if self.check(TokenType.PLUS) or self.check(TokenType.MINUS):  # Check specific token types PLUS/MINUS
             operator = self.advance().value
-            # Tekli operatörden sonra bir faktör beklenir.
-            operand = self.parse_unary()  # Özyinelemeli olarak unary ifadeyi ayrıştır
+            operand = self.parse_unary()
             return UnaryOpNode(operator, operand)
-        # Eğer bir unary operatör yoksa, birincil ifadeyi ayrıştır
         return self.parse_primary()
 
     def parse_primary(self):
@@ -309,18 +359,16 @@ class Parser:
             return True
         return False
 
-    def consume(self, type_, value_to_check=None):
-        if self.check(type_, value_to_check):
-            return self.advance()
+    def consume(self, type_, message=None):
+        token = self.peek()
+        if token.type == type_ and (
+                message is None or token.value == message):  # message'ı expected_value olarak kullanın
+            self.advance()
+            return token
 
-        actual = self.peek()
-        expected_str = type_.name
-        if value_to_check:
-            expected_str += f" ('{value_to_check}')"
-
-        # Hata mesajını daha da netleştirelim
-        raise ParserError(f"Beklenen {expected_str} ancak bulundu: {actual.type.name} ('{actual.value}'). "
-                          f"Token: {actual.type.name} ('{actual.value}') (Satır {actual.line}, Sütun {actual.column})")
+        raise ParserError(f"Beklenen '{message if message else type_.name}' bulunamadı. "
+                          f"Ancak '{token.value}' ({token.type.name}) bulundu. "
+                          f"(Satır {token.line}, Sütun {token.column})")
 
     def consume_keyword(self, keyword_type):
         if self.check_keyword(keyword_type):
@@ -330,8 +378,6 @@ class Parser:
             f"Beklenen anahtar kelime {keyword_type.name} ancak bulundu: {actual.type.name} ('{actual.value}') (Satır {actual.line}, Sütun {actual.column})")
 
     def check(self, type_, value_to_check=None):
-        if self.is_at_end():
-            return False
         token = self.peek()
         if token.type != type_:
             return False
@@ -346,22 +392,29 @@ class Parser:
         return token.type == keyword_type
 
     def advance(self):
-        if not self.is_at_end():
-            self.current += 1
-        return self.previous()
+        # Eğer dosyanın sonundaysak, EOF tokenı döndür (bu durumda ilerleme olmaz)
+        if self.is_at_end():
+            return Token(TokenType.EOF, '', -1, -1)
+
+            # Mevcut lookahead tokenını kaydet (bu, az önce işlenecek olan token)
+        previous_token = self.lookahead
+
+        # self.current'ı bir sonraki raw tokene ilerlet
+        self.current += 1
+
+        # Yeni lookahead'i belirlemek için _prime_lookahead'i çağır
+        # Bu, otomatik olarak boşluk ve yorumları atlayacaktır.
+        self._prime_lookahead()
+
+        # Az önce işlenen tokenı döndür
+        return previous_token
 
     def previous(self):
         return self.tokens[self.current - 1]
 
     def peek(self):
-        if self.current >= len(self.tokens):
-            # EOF token'ının doğru satır ve sütun bilgisini vermeye çalış
-            # Eğer token listesi boşsa, varsayılan bir konum ver.
-            last_token_line = self.tokens[-1].line if self.tokens else 1
-            last_token_col = self.tokens[-1].column + len(self.tokens[-1].value) if self.tokens else 0
-            return Token(TokenType.EOF, '', line=last_token_line, column=last_token_col)
-        return self.tokens[self.current]
+        return self.lookahead
 
     def is_at_end(self):
-        # Sadece EOF token'ına ulaşıldığında son olarak kabul et
-        return self.peek().type == TokenType.EOF
+        # Lookahead tokenının EOF olup olmadığını kontrol et
+        return self.lookahead.type == TokenType.EOF
