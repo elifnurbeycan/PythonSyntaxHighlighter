@@ -72,7 +72,7 @@ Proje kapsamında hiçbir hazır vurgulama (highlighting) kütüphanesi kullanı
 
 Projeyle ilgili tüm teknik bilgiler ve kararlar aşağıdaki makalede açıklanmıştır:
 
-📝 [Projeye ait teknik makale - Bağlantı eklenecek](#)
+📝 [https://medium.com/@elif.bycn35/ger%C3%A7ek-zamanl%C4%B1-s%C3%B6zdizimi-vurgulay%C4%B1c%C4%B1-projesi-tasar%C4%B1m-ve-uygulama-ccd0be769c66](#)
 
 ### İçerik
 
