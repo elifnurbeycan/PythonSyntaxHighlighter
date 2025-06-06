@@ -2,7 +2,7 @@
 
 ## 📌 Genel Bakış
 
-Bu proje, bir **programlama dili** için gerçek zamanlı çalışan, **grafiksel kullanıcı arayüzü (GUI)** içeren bir **sözdizimi vurgulayıcı** uygulamasıdır. Geliştirilen sistem, **biçimsel dil kurallarına (gramer)** dayalı olarak **leksik (lexical) ve sözdizimsel (syntax) analiz** gerçekleştirir.
+Bu proje, bir **programlama dili** için gerçek zamanlı çalışan, **grafiksel kullanıcı arayüzü (GUI)** içeren bir **sözdizimi vurgulayıcı** uygulamasıdır. Geliştirilen sistem, **biçimsel dil kurallarına (gramer)** dayalı olarak **lexical ve sözdizimsel (syntax) analiz** gerçekleştirir.
 
 Proje kapsamında hiçbir hazır vurgulama (highlighting) kütüphanesi kullanılmamış, tüm analiz araçları sıfırdan geliştirilmiştir.
 
@@ -11,7 +11,7 @@ Proje kapsamında hiçbir hazır vurgulama (highlighting) kütüphanesi kullanı
 - Tkinter tabanlı kullanıcı dostu grafik arayüzü
 - Kod yazılırken gerçek zamanlı sözdizimi vurgulaması
 - En az 5 farklı token türünü anlık olarak ayırt edip renklendirme
-- Regex tabanlı programatik leksik analiz
+- Regex tabanlı programatik lexical analiz
 - Recursive Descent (Top-Down) parser ile sözdizimsel analiz
 - Hatalı sözdizimi kullanıcıya anlık olarak gösterme
 - Kod bloklarını girintiye göre algılama ve ayrıştırma
@@ -77,7 +77,7 @@ Projeyle ilgili tüm teknik bilgiler ve kararlar aşağıdaki makalede açıklan
 ### İçerik
 
 - Dil ve gramer seçimi
-- Leksik analiz süreci ve yöntemleri
+- Lexical analiz süreci ve yöntemleri
 - Parser yapısı ve kuralları
 - Sözdizimi vurgulama mantığı
 - GUI tasarımı ve işleyişi
