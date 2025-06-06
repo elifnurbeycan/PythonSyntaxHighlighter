@@ -17,21 +17,21 @@ Proje kapsamında hiçbir hazır vurgulama (highlighting) kütüphanesi kullanı
 - Kod bloklarını girintiye göre algılama ve ayrıştırma
 - Harici herhangi bir sözdizimi vurgulama kütüphanesi kullanılmaz
 
-## 🧩 Desteklenen Token Türleri ve Yapılar
+## 🧩 Desteklenen Token Türleri
 
-Bu uygulama, aşağıdaki Python sözdizimi öğelerini tanır ve vurgular:
-
-- **Anahtar Kelimeler:** `if`, `else`, `while`, `def`, `return`, `and`, `or`, `not` vb.
-- **Operatörler:** `=`, `==`, `+`, `-`, `*`, `/`, `%`, `!=`, `<`, `>`, `<=`, `>=` vb.
-- **Sayılar:** Tam sayılar, ondalıklı sayılar
-- **Dizeler:** Tek tırnak veya çift tırnak içinde metinler
-- **Yorumlar:** Satır içi `#` ile başlayan açıklamalar
-- **Tanımlayıcılar:** Değişken ve fonksiyon isimleri
-- **Boolean Değerleri:** `True`, `False`, `None`
-- **Fonksiyon Çağrıları:** Örnek: `print(x)`
-- **Kod Blokları:** Girinti ile belirlenen bloklar (if, while, fonksiyon vb.)
-- **Parantezler, Virgüller, İki Nokta (:)** gibi yapısal semboller
-- **Hatalı Karakterler:** Tanınmayan veya yanlış yazılmış semboller
+| Token Türü         | Açıklama                                                           |
+|--------------------|--------------------------------------------------------------------|
+| Anahtar Kelimeler  | `if`, `else`, `while`, `def`, `return`, `and`, `or`, `not` vb.    |
+| Operatörler        | `=`, `==`, `+`, `-`, `*`, `/`, `%`, `!=`, `<`, `>`, `<=`, `>=` vb. |
+| Sayılar            | Tam sayılar ve ondalıklı sayılar                                  |
+| Dizeler (String)   | `'metin'`, `"metin"` gibi tırnak içindeki ifadeler                |
+| Yorumlar           | `#` ile başlayan açıklama satırları                                |
+| Tanımlayıcılar     | Değişken ve fonksiyon isimleri                                     |
+| Boolean Değerleri  | `True`, `False`, `None` gibi yapılar                               |
+| Fonksiyon Çağrıları| `print(x)` gibi fonksiyon kullanımları                            |
+| Yapısal Semboller  | Parantezler `(` `)` , `:` , `,` gibi sözdizim sembolleri           |
+| Kod Blokları       | Girintiye dayalı blok yapıları (if, while, def içeriği vb.)        |
+| Hatalı Karakterler | Tanınmayan veya yanlış yazılmış semboller                         |
 
 ## 🎨 Vurgulama Renkleri
 
