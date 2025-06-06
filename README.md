@@ -10,7 +10,7 @@ Proje kapsamında hiçbir hazır vurgulama (highlighting) kütüphanesi kullanı
 
 - Tkinter tabanlı kullanıcı dostu grafik arayüzü
 - Kod yazılırken gerçek zamanlı sözdizimi vurgulaması
-- En az 5 farklı token türünü anlık olarak ayırt edip renklendirme
+- Token türünü anlık olarak ayırt edip renklendirme
 - Regex tabanlı programatik lexical analiz
 - Recursive Descent (Top-Down) parser ile sözdizimsel analiz
 - Hatalı sözdizimi kullanıcıya anlık olarak gösterme
