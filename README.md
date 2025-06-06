@@ -47,6 +47,20 @@ Proje kapsamında hiçbir hazır vurgulama (highlighting) kütüphanesi kullanı
 | Boolean Değerleri| Koyu Mavi     |
 | Hatalı Karakter  | Kırmızı (Altı Çizili) |
 
+## 🖼 Görsel Örnekler
+
+### Başarılı Kod Vurgulaması
+
+![Başarılı Kod Örneği](images/kodcıktı1.png)
+
+---
+
+### Hata Yakalama Örneği
+
+![Hata Yakalama Örneği](images/kodcıktıhata1.png)
+
+---
+
 ## 🖼 Arayüz (GUI)
 
 - Python Tkinter kullanılarak oluşturuldu
