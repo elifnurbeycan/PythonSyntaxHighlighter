@@ -26,13 +26,17 @@ class Lexer:
         self.keywords = {
             'if': TokenType.KEYWORD_IF,
             'else': TokenType.KEYWORD_ELSE,
+            'elif': TokenType.KEYWORD_ELIF,
             'while': TokenType.KEYWORD_WHILE,
             'def': TokenType.KEYWORD_DEF,
             'return': TokenType.KEYWORD_RETURN,
             'True': TokenType.KEYWORD_TRUE,
             'False': TokenType.KEYWORD_FALSE,
             'None': TokenType.KEYWORD_NONE,
-            'print': TokenType.KEYWORD_PRINT
+            'print': TokenType.KEYWORD_PRINT,
+            'and': TokenType.KEYWORD_AND,
+            'or': TokenType.KEYWORD_OR,
+            'not': TokenType.KEYWORD_NOT
         }
 
         self.full_regex = re.compile(
