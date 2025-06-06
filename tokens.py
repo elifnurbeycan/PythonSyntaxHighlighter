@@ -14,6 +14,10 @@ class TokenType(Enum):
     KEYWORD_NONE = 'NONE'
     KEYWORD_PRINT = 'PRINT' # 'print' için özel bir anahtar kelime
 
+    KEYWORD_IMPORT = 'import'
+    KEYWORD_FROM = 'from'
+    KEYWORD_PASS = 'pass'
+
     # Operatörler
     OPERATOR = 'OPERATOR' # Tüm operatörler için tek tip
     EQ = '=='
